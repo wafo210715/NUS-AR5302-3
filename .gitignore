@@ -1,0 +1,20 @@
+# Data (shared separately, not in git)
+data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+.Renviron
+*.Rproj
+
+# Output
+*.parquet
+output/raw/
+
+# Claude local config
+.claude/settings.local.json
