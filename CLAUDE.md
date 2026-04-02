@@ -87,9 +87,9 @@ Before starting any work, read these files to understand project context:
 - `docs/todo.md` — task tracking and pending items
 - `docs/workload_plan.md` — 5-part workload division and timeline
 - `docs/info.md` — data lineage, naming conventions, file flow
-- `docs/progress_20250325.md` — established methodology decisions
+- `docs/progress_20250402.md` — progress log and established methodology decisions
 
 ## Coordination
-- Check `docs/progress_20250325.md` for established methodology decisions
+- Check `docs/progress_20250402.md` for established methodology decisions
 - Ask questions in the group chat before making assumptions
 - Announce in the group chat when you're about to push changes
