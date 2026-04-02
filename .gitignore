@@ -15,6 +15,7 @@ Thumbs.db
 # Output
 *.parquet
 output/raw/
+figures/
 
 # Claude local config
 .claude/settings.local.json

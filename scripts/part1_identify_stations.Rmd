@@ -1,0 +1,364 @@
+---
+title: "Part 1: Identify NUS and NTU Bus Stops"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(jsonlite)
+
+theme_set(theme_minimal(base_size = 12))
+
+project_colors <- c(
+  nus_blue    = "#003D7C",
+  ntu_orange  = "#E85D04",
+  bus_red     = "#D62828",
+  mrt_green   = "#2D6A4F",
+  buffer_blue = "#A2D2FF",
+  buffer_yel  = "#FFBA08"
+)
+
+map_theme <- theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "gray40"),
+    plot.caption = element_text(color = "gray50", size = 9)
+  )
+
+PROJ <- normalizePath("..")
+od_data_dir    <- file.path(PROJ, "data/OD_Data")
+figures_dir    <- file.path(PROJ, "figures")
+output_dir     <- file.path(PROJ, "data")
+
+dir.create(figures_dir, showWarnings = FALSE)
+dir.create(output_dir, showWarnings = FALSE)
+```
+
+```{r load-campus-boundaries, message=FALSE}
+nus_poly <- st_read(file.path(output_dir, "nus_boundary.geojson"), quiet = TRUE)
+ntu_poly <- st_read(file.path(output_dir, "ntu_boundary.geojson"), quiet = TRUE)
+```
+
+```{r load-bus-stops, message=FALSE}
+bus_stops_raw <- st_read(file.path(output_dir, "LTABusStop.geojson"), quiet = TRUE)
+
+bus_stops <- bus_stops_raw %>%
+  rename(bus_stop_code = BUS_STOP_NUM, bus_roof_num = BUS_ROOF_NUM) %>%
+  select(bus_stop_code, geometry) %>%
+  mutate(
+    pt_type = "BUS",
+    longitude = st_coordinates(.)[, 1],
+    latitude  = st_coordinates(.)[, 2]
+  )
+
+format_bus_code <- function(code) {
+  code <- trimws(as.character(code))
+  if (!is.na(suppressWarnings(as.numeric(code)))) {
+    code <- sprintf("%05d", as.numeric(code))
+  }
+  return(code)
+}
+
+bus_all_df <- bus_stops %>%
+  st_drop_geometry() %>%
+  mutate(bus_stop_code = sapply(bus_stop_code, format_bus_code)) %>%
+  select(bus_stop_code, longitude, latitude)
+
+write.csv(bus_all_df, file.path(output_dir, "sg_bus_stops_all.csv"), row.names = FALSE)
+message("Saved sg_bus_stops_all.csv: ", nrow(bus_all_df), " bus stops")
+```
+
+```{r load-mrt-stations, message=FALSE}
+# The LTA GeoJSON contains 597 rows — each row is one physical EXIT
+# (e.g. "PIONEER MRT STATION Exit A"). A single station has multiple exits.
+# We need to collapse these into one representative point per station.
+
+mrt_exits_raw <- st_read(
+  file.path(output_dir, "LTAMRTStationExitGEOJSON.geojson"),
+  quiet = TRUE
+)
+
+# Rename LTA's truncated column "STATION_NA" → "station_name"
+mrt_exits <- mrt_exits_raw %>%
+  rename(station_name = STATION_NA)
+
+# Strip the " MRT STATION" suffix from each station name.
+# gsub(pattern, replacement, x): " KENT RIDGE MRT STATION" → "KENT RIDGE"
+# The $ in the pattern means "match only at end of string"
+mrt_exits <- mrt_exits %>%
+  mutate(station_name_clean = gsub(" MRT STATION$", "", station_name))
+
+# Group all exits belonging to the same station together.
+# e.g. Pioneer Exit A, B, C, D become one group "PIONEER".
+# 597 individual exits → ~130 unique station groups.
+mrt_grouped <- mrt_exits %>%
+  group_by(station_name_clean)
+
+# Collapse each station group into a single row:
+#   st_union(geometry)  — merges all exit points into one MULTIPOINT geometry
+#   st_centroid()       — computes the geographic center of those points → one POINT
+#   first()             — grabs the value from the first row in the group
+#                        (all rows in a group share the same station_name anyway)
+#   .groups = "drop"    — removes the grouping structure after summarise
+mrt_stations <- mrt_grouped %>%
+  summarise(
+    station_name = first(station_name),
+    geometry     = st_centroid(st_union(geometry)),
+    .groups      = "drop"
+  )
+
+# Extract longitude and latitude from the centroid point geometry.
+# st_coordinates() returns a matrix: [,1] = longitude, [,2] = latitude.
+mrt_stations <- mrt_stations %>%
+  mutate(
+    pt_type   = "TRAIN",
+    longitude = st_coordinates(geometry)[, 1],
+    latitude  = st_coordinates(geometry)[, 2]
+  )
+
+# --- Map station names to OD data codes (e.g. "KENT RIDGE" → "CC24") ---
+# Read the lookup table built from LTA/Wikipedia data.
+# Each row maps one station code to its English name and MRT line.
+code_lookup <- read.csv(file.path(output_dir, "mrt_station_codes.csv"),
+                        stringsAsFactors = FALSE)
+
+# Build a reverse lookup: station_name → stn_code.
+# For interchange stations, multiple codes map to the same name
+# (e.g. EW24 and NS1 both → "Jurong East"). We keep the first match per name.
+name_to_code <- code_lookup %>%
+  group_by(station_name) %>%
+  summarise(station_code = first(stn_code), .groups = "drop")
+
+# Some stations in our GeoJSON have names with " LRT STATION" suffix
+# (e.g. "BAKAU LRT STATION"). Strip this suffix for matching.
+# Also handle edge cases where LTA data has codes as names ("CC9", "DT4").
+mrt_stations <- mrt_stations %>%
+  mutate(
+    name_for_match = gsub(" LRT STATION$", "", station_name_clean),
+    name_for_match = trimws(toupper(name_for_match))
+  )
+
+# Join on station name (both sides uppercased for case-insensitive match).
+# left_join keeps all stations even if no code match is found.
+name_to_code_upper <- name_to_code %>%
+  mutate(station_name = toupper(station_name))
+
+mrt_stations <- mrt_stations %>%
+  left_join(name_to_code_upper, by = c("name_for_match" = "station_name")) %>%
+  select(-name_for_match)
+
+matched <- sum(!is.na(mrt_stations$station_code))
+unmatched <- mrt_stations %>% filter(is.na(station_code))
+message("MRT code mapping: ", matched, "/", nrow(mrt_stations), " matched")
+if (nrow(unmatched) > 0) {
+  message("Unmatched stations:")
+  print(unmatched %>% st_drop_geometry() %>% pull(station_name_clean))
+}
+
+mrt_all_df <- mrt_stations %>%
+  st_drop_geometry() %>%
+  select(station_name = station_name_clean, station_code, longitude, latitude)
+
+write.csv(mrt_all_df, file.path(output_dir, "sg_mrt_stations_all.csv"), row.names = FALSE)
+message("Saved sg_mrt_stations_all.csv: ", nrow(mrt_all_df), " MRT stations")
+```
+
+```{r buffer-and-intersect, message=FALSE}
+nus_poly_3414     <- st_transform(nus_poly, 3414)
+ntu_poly_3414     <- st_transform(ntu_poly, 3414)
+bus_stops_3414    <- st_transform(bus_stops, 3414)
+mrt_stations_3414 <- st_transform(mrt_stations, 3414)
+
+nus_buffer <- st_buffer(nus_poly_3414, dist = 500)
+ntu_buffer <- st_buffer(ntu_poly_3414, dist = 500)
+
+nus_bus <- bus_stops_3414[nus_buffer, ]
+ntu_bus <- bus_stops_3414[ntu_buffer, ]
+nus_mrt <- mrt_stations_3414[nus_buffer, ]
+ntu_mrt <- mrt_stations_3414[ntu_buffer, ]
+
+message("NUS: ", nrow(nus_bus), " bus stops, ", nrow(nus_mrt), " MRT stations")
+message("NTU: ", nrow(ntu_bus), " bus stops, ", nrow(ntu_mrt), " MRT stations")
+```
+
+```{r build-station-list, message=FALSE}
+nus_bus_wgs84 <- st_transform(nus_bus, 4326)
+nus_bus_df <- data.frame(
+  station_name = paste("Bus Stop", nus_bus_wgs84$bus_stop_code),
+  pt_code    = sapply(nus_bus_wgs84$bus_stop_code, format_bus_code),
+  pt_type    = "BUS",
+  university = "NUS",
+  latitude   = st_coordinates(nus_bus_wgs84)[, 2],
+  longitude  = st_coordinates(nus_bus_wgs84)[, 1],
+  source     = "buffer_500m",
+  stringsAsFactors = FALSE
+)
+
+nus_mrt_wgs84 <- st_transform(nus_mrt, 4326)
+if (nrow(nus_mrt) > 0) {
+  nus_mrt_df <- data.frame(
+    station_name = nus_mrt_wgs84$station_name_clean,
+    pt_code    = nus_mrt_wgs84$station_code,
+    pt_type    = "TRAIN",
+    university = "NUS",
+    latitude   = st_coordinates(nus_mrt_wgs84)[, 2],
+    longitude  = st_coordinates(nus_mrt_wgs84)[, 1],
+    source     = "buffer_500m",
+    stringsAsFactors = FALSE
+  )
+  nus_list <- rbind(nus_bus_df, nus_mrt_df)
+} else {
+  nus_list <- nus_bus_df
+}
+
+ntu_bus_wgs84 <- st_transform(ntu_bus, 4326)
+ntu_bus_df <- data.frame(
+  station_name = paste("Bus Stop", ntu_bus_wgs84$bus_stop_code),
+  pt_code    = sapply(ntu_bus_wgs84$bus_stop_code, format_bus_code),
+  pt_type    = "BUS",
+  university = "NTU",
+  latitude   = st_coordinates(ntu_bus_wgs84)[, 2],
+  longitude  = st_coordinates(ntu_bus_wgs84)[, 1],
+  source     = "buffer_500m",
+  stringsAsFactors = FALSE
+)
+
+ntu_mrt_wgs84 <- st_transform(ntu_mrt, 4326)
+if (nrow(ntu_mrt) > 0) {
+  ntu_mrt_df <- data.frame(
+    station_name = ntu_mrt_wgs84$station_name_clean,
+    pt_code    = ntu_mrt_wgs84$station_code,
+    pt_type    = "TRAIN",
+    university = "NTU",
+    latitude   = st_coordinates(ntu_mrt_wgs84)[, 2],
+    longitude  = st_coordinates(ntu_mrt_wgs84)[, 1],
+    source     = "buffer_500m",
+    stringsAsFactors = FALSE
+  )
+  ntu_list <- rbind(ntu_bus_df, ntu_mrt_df)
+} else {
+  ntu_list <- ntu_bus_df
+}
+
+master_station_list <- rbind(nus_list, ntu_list)
+```
+
+```{r cross-reference-od, message=FALSE}
+# Read a small sample (first 100K rows) of one month's OD data.
+# We don't need all 6.8M bus rows — just enough to collect the set of
+# station codes that actually appear in the data.
+
+bus_sample <- read.csv(
+  file.path(od_data_dir, "origin_destination_bus_202501.csv"),
+  nrows = 100000
+)
+train_sample <- read.csv(
+  file.path(od_data_dir, "origin_destination_train_202501.csv"),
+  nrows = 100000
+)
+
+# Collect every unique station code from the sample,
+# from both origin and destination columns, for both bus and train.
+# e.g. ORIGIN_PT_CODE = "04168", DESTINATION_PT_CODE = "CC24"
+all_codes_in_data <- unique(c(
+  as.character(bus_sample$ORIGIN_PT_CODE),
+  as.character(bus_sample$DESTINATION_PT_CODE),
+  as.character(train_sample$ORIGIN_PT_CODE),
+  as.character(train_sample$DESTINATION_PT_CODE)
+))
+
+# For each station, check whether its code exists in the OD data.
+# NA %in% vector returns NA, which filter() would incorrectly keep,
+# so we guard with is.na() first.
+master_station_list$in_od_data <- ifelse(
+  is.na(master_station_list$pt_code),
+  NA,
+  master_station_list$pt_code %in% all_codes_in_data
+)
+
+# Report any non-NA codes not found in OD data.
+missing <- master_station_list %>%
+  filter(!is.na(pt_code), !in_od_data)
+
+if (nrow(missing) > 0) {
+  message("WARNING: ", nrow(missing), " codes not found in OD data:")
+  print(missing[, c("station_name", "pt_code", "pt_type")])
+} else {
+  message("All identified codes exist in OD data sample.")
+}
+```
+
+```{r visualize-nus, message=FALSE, warning=FALSE, fig.width=10, fig.height=8}
+nus_buffer_wgs84 <- st_transform(nus_buffer, 4326)
+nus_poly_wgs84   <- st_transform(nus_poly, 4326)
+
+ggplot() +
+  geom_sf(data = nus_buffer_wgs84,
+          fill = project_colors["buffer_blue"], alpha = 0.3,
+          color = project_colors["nus_blue"], linewidth = 0.5) +
+  geom_sf(data = nus_poly_wgs84,
+          fill = NA, color = project_colors["nus_blue"], linewidth = 1) +
+  geom_sf(data = nus_bus_wgs84,
+          color = project_colors["bus_red"], size = 2, shape = 16) +
+  geom_sf(data = nus_mrt_wgs84,
+          color = project_colors["mrt_green"], size = 4, shape = 17) +
+  geom_sf_text(data = nus_bus_wgs84,
+               aes(label = bus_stop_code),
+               nudge_x = 0.001, nudge_y = 0.001,
+               size = 2.5, check_overlap = TRUE) +
+  geom_sf_text(data = nus_mrt_wgs84,
+               aes(label = station_name_clean),
+               nudge_x = 0.002, nudge_y = 0.002,
+               size = 3, fontface = "bold", check_overlap = TRUE) +
+  labs(
+    title = "NUS Campus: Bus Stops and MRT Stations (500m Buffer)",
+    subtitle = paste0(nrow(nus_bus_wgs84), " bus stops, ",
+                      nrow(nus_mrt_wgs84), " MRT stations"),
+    caption = "Data: OpenStreetMap (campus boundary), LTA DataMall (bus stops, MRT stations)"
+  ) +
+  map_theme +
+  coord_sf()
+```
+
+```{r visualize-ntu, message=FALSE, warning=FALSE, fig.width=10, fig.height=8}
+ntu_buffer_wgs84 <- st_transform(ntu_buffer, 4326)
+ntu_poly_wgs84   <- st_transform(ntu_poly, 4326)
+
+ggplot() +
+  geom_sf(data = ntu_buffer_wgs84,
+          fill = project_colors["buffer_yel"], alpha = 0.3,
+          color = project_colors["ntu_orange"], linewidth = 0.5) +
+  geom_sf(data = ntu_poly_wgs84,
+          fill = NA, color = project_colors["ntu_orange"], linewidth = 1) +
+  geom_sf(data = ntu_bus_wgs84,
+          color = project_colors["bus_red"], size = 2, shape = 16) +
+  geom_sf(data = ntu_mrt_wgs84,
+          color = project_colors["mrt_green"], size = 4, shape = 17) +
+  geom_sf_text(data = ntu_bus_wgs84,
+               aes(label = bus_stop_code),
+               nudge_x = 0.001, nudge_y = 0.001,
+               size = 2.5, check_overlap = TRUE) +
+  geom_sf_text(data = ntu_mrt_wgs84,
+               aes(label = station_name_clean),
+               nudge_x = 0.002, nudge_y = 0.002,
+               size = 3, fontface = "bold", check_overlap = TRUE) +
+  labs(
+    title = "NTU Campus: Bus Stops and MRT Stations (500m Buffer)",
+    subtitle = paste0(ntu_bus_wgs84 %>% nrow(), " bus stops, ",
+                      ntu_mrt_wgs84 %>% nrow(), " MRT stations"),
+    caption = "Data: OpenStreetMap (campus boundary), LTA DataMall (bus stops, MRT stations)"
+  ) +
+  map_theme +
+  coord_sf()
+```
+
+```{r save-results, message=FALSE}
+write.csv(master_station_list,
+          file.path(output_dir, "station_mapping.csv"),
+          row.names = FALSE)
+message("Saved station_mapping.csv")
+message("NUS: ", sum(master_station_list$university == "NUS"), " stations")
+message("NTU: ", sum(master_station_list$university == "NTU"), " stations")
+```

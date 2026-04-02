@@ -82,6 +82,13 @@ These are established research terminology rules:
 - Work on `main` branch — no feature branches (too complex for one file)
 - If stuck on a merge conflict, ask the group chat immediately
 
+## Project Documentation
+Before starting any work, read these files to understand project context:
+- `docs/todo.md` — task tracking and pending items
+- `docs/workload_plan.md` — 5-part workload division and timeline
+- `docs/info.md` — data lineage, naming conventions, file flow
+- `docs/progress_20250325.md` — established methodology decisions
+
 ## Coordination
 - Check `docs/progress_20250325.md` for established methodology decisions
 - Ask questions in the group chat before making assumptions
