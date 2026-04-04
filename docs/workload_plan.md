@@ -14,6 +14,7 @@
 **Best fit:** Member with strongest data/engineering skills
 
 **Tasks:**
+
 - Obtain NUS and NTU campus boundary polygons from OpenStreetMap (Overpass API)
 - Obtain bus stop coordinates from LTA DataMall GeoJSON (5,166 bus stops)
 - Obtain MRT station exit coordinates from LTA DataMall GeoJSON (597 exits → ~130 stations)
@@ -28,6 +29,7 @@
 - Set up the shared setup chunk in `report.Rmd` (library loading, data paths)
 
 **Completed (2026-04-02):**
+
 - Campus boundaries acquired (NUS: 67-point polygon, NTU: 85-point polygon)
 - Part 1 identification script (`scripts/part1_identify_stations.Rmd`) — knits end-to-end
 - `data/station_mapping.csv` — campus-buffered stations with pt_code, pt_type, university, lat/lon
@@ -40,12 +42,14 @@
 - Visualization: NUS and NTU campus maps with bus stops (red circles) and MRT stations (green triangles)
 
 **Remaining:**
+
 - Extract OD subsets from 74 months
 - Extract node subsets
 - Data quality checks
 - Create `report.Rmd` skeleton with shared setup chunk
 
 **Deliverables:**
+
 - Station code mapping table (station name, PT_CODE, PT_TYPE, university)
 - Extracted OD subset dataset + node subset dataset (shared via Google Drive)
 - Data quality summary
@@ -61,6 +65,7 @@
 **Best fit:** Member comfortable with time-series visualization
 
 **Tasks:**
+
 - Hourly profiles: peak/off-peak for NUS vs NTU (weekday vs weekend)
 - Weekly patterns: weekday vs weekend/holiday comparison
 - Monthly/seasonal trends across 2020–2026
@@ -69,6 +74,7 @@
 - Produce 2–3 publication-quality figures
 
 **Deliverables:**
+
 - Analysis code + 2–3 figures (heatmap, line charts, time series)
 - Written findings with interpretation
 
@@ -83,6 +89,7 @@
 **Best fit:** Member interested in GIS/spatial analysis
 
 **Tasks:**
+
 - Obtain POI data for Singapore (OpenStreetMap/Overpass API, or SLA OneMap)
 - Geocode all transport stations (lat/lng using LTA bus stop JSON files + MRT coordinate lists)
 - Build destination profiles: for each destination station, count nearby POIs by category (dining, shopping, entertainment, parks, residential, commercial, etc.)
@@ -93,6 +100,7 @@
 **Note:** POI data acquisition and geocoding can start immediately — does not need to wait for Part 1.
 
 **Deliverables:**
+
 - POI dataset + station geocoding table + destination profile dataset (shared via Google Drive)
 - 2–3 figures (destination maps, POI category charts)
 - Written findings
@@ -108,6 +116,7 @@
 **Best fit:** Member with strongest quantitative/statistics skills
 
 **Tasks:**
+
 - Destination overlap: Jaccard similarity, rank correlation between NUS and NTU
 - Travel distance analysis: haversine distance between origin-destination pairs, compare distributions
 - Catchment area comparison: what % of trips fall within 5km, 10km, 15km, 20km zones
@@ -119,6 +128,7 @@
 - Produce 2–3 figures
 
 **Deliverables:**
+
 - Analysis code + 2–3 figures (Sankey diagram, distance distributions, catchment charts)
 - Written findings with statistical interpretation
 
@@ -133,17 +143,20 @@
 **Best fit:** Member with strongest academic writing skills
 
 **Phase 1 (starts immediately, no dependencies):**
+
 - Find 8–12 relevant academic papers (university travel behavior, OD analysis, Singapore transport, POI-based destination studies)
 - Write Literature Review (~1–1.5 pages, organized thematically)
 - Write Introduction (~1 page)
 - Perform a standalone supplementary analysis: mode share comparison (bus vs train) using node tap-in/tap-out data
 
 **Phase 2 (after Parts 2–4 produce findings):**
+
 - Write Method section (~1–1.5 pages, synthesizing data prep from Part 1 + analytical methods from Parts 2–4)
 - Write Conclusion (~0.5–1 page)
 - Write Abstract (~150–250 words)
 
 **Phase 3 (final days):**
+
 - Ensure consistent terminology, voice, and formatting across all sections
 - Write transitions between sections
 - Proofread, check figure references, format references
@@ -157,13 +170,15 @@
 
 ## Timeline
 
-| Days | Part 1 | Part 2 | Part 3 | Part 4 | Part 5 |
-|------|--------|--------|--------|--------|--------|
-| 1–3 | Station mapping + data extraction | (blocked) | POI data acquisition + geocoding | (blocked) | Literature search + reading |
-| 4–7 | Deliver subset + write Method data section | Temporal analysis + figures | Spatial/POI analysis + figures | Comparative analysis + figures | Write lit review + intro |
-| 8–11 | Assist others if needed | Draft Results section | Draft Results section | Draft Results section | Write Method + Conclusion |
-| 12–14 | Review all sections | Review all sections | Review all sections | Review all sections | Assemble paper, abstract, proofread |
-| 15–18 | Group review, final edits, submit | Group review, final edits, submit | Group review, final edits, submit | Group review, final edits, submit | Group review, final edits, submit |
+
+| Days  | Part 1                                     | Part 2                            | Part 3                            | Part 4                            | Part 5                              |
+| ----- | ------------------------------------------ | --------------------------------- | --------------------------------- | --------------------------------- | ----------------------------------- |
+| 1–3   | Station mapping + data extraction          | (blocked)                         | POI data acquisition + geocoding  | (blocked)                         | Literature search + reading         |
+| 4–7   | Deliver subset + write Method data section | Temporal analysis + figures       | Spatial/POI analysis + figures    | Comparative analysis + figures    | Write lit review + intro            |
+| 8–11  | Assist others if needed                    | Draft Results section             | Draft Results section             | Draft Results section             | Write Method + Conclusion           |
+| 12–14 | Review all sections                        | Review all sections               | Review all sections               | Review all sections               | Assemble paper, abstract, proofread |
+| 15–18 | Group review, final edits, submit          | Group review, final edits, submit | Group review, final edits, submit | Group review, final edits, submit | Group review, final edits, submit   |
+
 
 ## Coordination Checkpoints
 
@@ -183,3 +198,4 @@
 3. **POI data availability** — OpenStreetMap via Overpass API is free for Singapore; SLA OneMap as backup
 4. **Inconsistent analysis across Parts 2–4** — Agree on shared analysis period and terminology at Day 1 meeting
 5. **Paper cohesion** — Part 5 owns assembly; group review session on Day 14–15
+
