@@ -362,3 +362,328 @@ message("Saved station_mapping.csv")
 message("NUS: ", sum(master_station_list$university == "NUS"), " stations")
 message("NTU: ", sum(master_station_list$university == "NTU"), " stations")
 ```
+
+# Data Extraction (run once in R console)
+
+These chunks extract campus-relevant rows from 74 months of OD and node data.
+Set `eval=FALSE` because this is a one-time batch operation (~18 GB input).
+Run each chunk manually in RStudio or R console.
+
+```{r extract-setup, eval=FALSE}
+library(readr)
+library(stringr)
+
+# Read the station codes identified in Part 1
+station_map <- read.csv(
+  file.path(output_dir, "station_mapping.csv"),
+  stringsAsFactors = FALSE
+)
+
+# Separate bus and train codes
+# Bus codes are zero-padded 5-digit strings (e.g. "15111")
+# Train codes are MRT line codes (e.g. "CC24")
+campus_bus_codes   <- station_map %>%
+  filter(pt_type == "BUS") %>%
+  pull(pt_code) %>%
+  as.character()
+
+campus_train_codes <- station_map %>%
+  filter(pt_type == "TRAIN") %>%
+  pull(pt_code) %>%
+  as.character() %>%
+  na.omit()
+
+message("Campus bus codes: ", length(campus_bus_codes))
+message("Campus train codes: ", length(campus_train_codes))
+
+# Create output directories
+od_subset_dir    <- file.path(output_dir, "od_subset")
+node_subset_dir  <- file.path(output_dir, "node_subset")
+dir.create(od_subset_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(node_subset_dir, showWarnings = FALSE, recursive = TRUE)
+
+# Helper: zero-pad a bus code to 5 digits
+# OD data reads "05239" as integer 5239 — this restores the leading zero
+pad_bus_code <- function(code) {
+  code <- as.character(code)
+  numeric_part <- suppressWarnings(as.numeric(code))
+  if (!is.na(numeric_part)) {
+    return(sprintf("%05d", numeric_part))
+  }
+  return(code)
+}
+```
+
+```{r extract-od-bus, eval=FALSE}
+# Extract OD bus data: keep rows where origin OR destination is a campus bus stop
+# Expected: reduces ~5.8M rows/month to ~tens of thousands
+
+od_bus_files <- sort(list.files(
+  od_data_dir, pattern = "^origin_destination_bus_.*\\.csv$", full.names = TRUE
+))
+
+message("Processing ", length(od_bus_files), " OD bus files ...")
+
+total_rows <- 0L
+start_time <- Sys.time()
+
+for (f in od_bus_files) {
+  fname <- basename(f)
+
+  df <- read_csv(f, show_col_types = FALSE, progress = FALSE) %>%
+    mutate(
+      ORIGIN_PT_CODE      = sapply(ORIGIN_PT_CODE, pad_bus_code),
+      DESTINATION_PT_CODE = sapply(DESTINATION_PT_CODE, pad_bus_code)
+    )
+
+  subset_df <- df %>%
+    filter(ORIGIN_PT_CODE %in% campus_bus_codes |
+           DESTINATION_PT_CODE %in% campus_bus_codes)
+
+  write_csv(subset_df, file.path(od_subset_dir, fname))
+
+  total_rows <- total_rows + nrow(subset_df)
+  message("  ", fname, ": ", nrow(subset_df), " rows (from ", nrow(df), ")")
+}
+
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+message("Done. ", total_rows, " total rows extracted in ", round(as.numeric(elapsed), 1), " min")
+```
+
+```{r extract-od-train, eval=FALSE}
+# Extract OD train data: keep rows where origin OR destination is a campus MRT station
+# Train codes are strings (e.g. "CC24") — no zero-padding needed
+
+od_train_files <- sort(list.files(
+  od_data_dir, pattern = "^origin_destination_train_.*\\.csv$", full.names = TRUE
+))
+
+message("Processing ", length(od_train_files), " OD train files ...")
+
+total_rows <- 0L
+start_time <- Sys.time()
+
+for (f in od_train_files) {
+  fname <- basename(f)
+
+  df <- read_csv(f, show_col_types = FALSE, progress = FALSE) %>%
+    mutate(
+      ORIGIN_PT_CODE      = as.character(ORIGIN_PT_CODE),
+      DESTINATION_PT_CODE = as.character(DESTINATION_PT_CODE)
+    )
+
+  subset_df <- df %>%
+    filter(ORIGIN_PT_CODE %in% campus_train_codes |
+           DESTINATION_PT_CODE %in% campus_train_codes)
+
+  write_csv(subset_df, file.path(od_subset_dir, fname))
+
+  total_rows <- total_rows + nrow(subset_df)
+  message("  ", fname, ": ", nrow(subset_df), " rows (from ", nrow(df), ")")
+}
+
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+message("Done. ", total_rows, " total rows extracted in ", round(as.numeric(elapsed), 1), " min")
+```
+
+```{r extract-node-bus, eval=FALSE}
+# Extract node bus data: keep rows where PT_CODE is a campus bus stop
+# Node data has tap-in/tap-out volumes per station per time slot
+
+node_bus_files <- sort(list.files(
+  od_data_dir, pattern = "^transport_node_bus_.*\\.csv$", full.names = TRUE
+))
+
+message("Processing ", length(node_bus_files), " node bus files ...")
+
+total_rows <- 0L
+start_time <- Sys.time()
+
+for (f in node_bus_files) {
+  fname <- basename(f)
+
+  df <- read_csv(f, show_col_types = FALSE, progress = FALSE) %>%
+    mutate(PT_CODE = sapply(PT_CODE, pad_bus_code))
+
+  subset_df <- df %>%
+    filter(PT_CODE %in% campus_bus_codes)
+
+  write_csv(subset_df, file.path(node_subset_dir, fname))
+
+  total_rows <- total_rows + nrow(subset_df)
+  message("  ", fname, ": ", nrow(subset_df), " rows (from ", nrow(df), ")")
+}
+
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+message("Done. ", total_rows, " total rows extracted in ", round(as.numeric(elapsed), 1), " min")
+```
+
+```{r extract-node-train, eval=FALSE}
+# Extract node train data: keep rows where PT_CODE is a campus MRT station
+
+node_train_files <- sort(list.files(
+  od_data_dir, pattern = "^transport_node_train_.*\\.csv$", full.names = TRUE
+))
+
+message("Processing ", length(node_train_files), " node train files ...")
+
+total_rows <- 0L
+start_time <- Sys.time()
+
+for (f in node_train_files) {
+  fname <- basename(f)
+
+  df <- read_csv(f, show_col_types = FALSE, progress = FALSE) %>%
+    mutate(PT_CODE = as.character(PT_CODE))
+
+  subset_df <- df %>%
+    filter(PT_CODE %in% campus_train_codes)
+
+  write_csv(subset_df, file.path(node_subset_dir, fname))
+
+  total_rows <- total_rows + nrow(subset_df)
+  message("  ", fname, ": ", nrow(subset_df), " rows (from ", nrow(df), ")")
+}
+
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+message("Done. ", total_rows, " total rows extracted in ", round(as.numeric(elapsed), 1), " min")
+```
+
+# Data Quality Checks (run after extraction)
+
+```{r data-quality, eval=FALSE}
+# Scan all extracted subset files and produce a quality report.
+# Checks: row counts per month, missing months, station coverage, anomalies.
+
+library(tidyr)
+
+build_quality_df <- function(subset_dir, pattern, code_col, campus_codes, is_train = FALSE) {
+  files <- sort(list.files(subset_dir, pattern = pattern, full.names = TRUE))
+
+  rows <- lapply(files, function(f) {
+    df <- read_csv(f, show_col_types = FALSE, progress = FALSE)
+
+    if (!is_train) {
+      # Zero-pad bus codes for matching
+      if (code_col == "PT_CODE") {
+        df[[code_col]] <- sapply(df[[code_col]], pad_bus_code)
+      } else {
+        df$ORIGIN_PT_CODE      <- sapply(df$ORIGIN_PT_CODE, pad_bus_code)
+        df$DESTINATION_PT_CODE <- sapply(df$DESTINATION_PT_CODE, pad_bus_code)
+      }
+    } else {
+      # Train codes are already strings
+      if (code_col == "PT_CODE") {
+        df[[code_col]] <- as.character(df[[code_col]])
+      } else {
+        df$ORIGIN_PT_CODE      <- as.character(df$ORIGIN_PT_CODE)
+        df$DESTINATION_PT_CODE <- as.character(df$DESTINATION_PT_CODE)
+      }
+    }
+
+    # Count unique campus stations that appear
+    if (code_col == "PT_CODE") {
+      stations_found <- intersect(df[[code_col]], campus_codes)
+    } else {
+      stations_found <- intersect(
+        union(df$ORIGIN_PT_CODE, df$DESTINATION_PT_CODE), campus_codes
+      )
+    }
+
+    tibble(
+      file            = basename(f),
+      year_month      = str_extract(basename(f), "\\d{6}"),
+      total_rows      = nrow(df),
+      total_trips     = if ("TOTAL_TRIPS" %in% names(df)) sum(df$TOTAL_TRIPS, na.rm = TRUE) else NA_real_,
+      stations_found  = length(stations_found),
+      stations_missing = length(campus_codes) - length(stations_found)
+    )
+  })
+
+  bind_rows(rows)
+}
+
+# Expected month range: Jan 2020 – Feb 2026
+all_months <- seq(
+  from = as.Date("2020-01-01"),
+  to   = as.Date("2026-02-01"),
+  by   = "month"
+) %>% format("%Y%m")
+
+message("=== OD Bus Subset ===")
+od_bus_qc <- build_quality_df(
+  od_subset_dir, "^origin_destination_bus_.*\\.csv$",
+  code_col = "OD", campus_codes = campus_bus_codes, is_train = FALSE
+)
+print(od_bus_qc)
+
+message("\n=== OD Train Subset ===")
+od_train_qc <- build_quality_df(
+  od_subset_dir, "^origin_destination_train_.*\\.csv$",
+  code_col = "OD", campus_codes = campus_train_codes, is_train = TRUE
+)
+print(od_train_qc)
+
+message("\n=== Node Bus Subset ===")
+node_bus_qc <- build_quality_df(
+  node_subset_dir, "^transport_node_bus_.*\\.csv$",
+  code_col = "PT_CODE", campus_codes = campus_bus_codes, is_train = FALSE
+)
+print(node_bus_qc)
+
+message("\n=== Node Train Subset ===")
+node_train_qc <- build_quality_df(
+  node_subset_dir, "^transport_node_train_.*\\.csv$",
+  code_col = "PT_CODE", campus_codes = campus_train_codes, is_train = TRUE
+)
+print(node_train_qc)
+
+# --- Missing months check ---
+for (label in c("OD Bus", "OD Train", "Node Bus", "Node Train")) {
+  qc_df <- switch(label,
+    "OD Bus"     = od_bus_qc,
+    "OD Train"   = od_train_qc,
+    "Node Bus"   = node_bus_qc,
+    "Node Train" = node_train_qc
+  )
+  missing <- setdiff(all_months, qc_df$year_month)
+  if (length(missing) > 0) {
+    message("WARNING [", label, "]: missing months: ", paste(missing, collapse = ", "))
+  } else {
+    message("[", label, "]: all 74 months present.")
+  }
+}
+
+# --- Anomaly detection: flag months with row counts > 2 SD from mean ---
+flag_anomalies <- function(qc_df, label) {
+  if (nrow(qc_df) == 0) return()
+  mean_rows <- mean(qc_df$total_rows)
+  sd_rows   <- sd(qc_df$total_rows)
+  if (is.na(sd_rows) || sd_rows == 0) return()
+  threshold <- 2 * sd_rows
+  outliers <- qc_df %>%
+    filter(abs(total_rows - mean_rows) > threshold)
+  if (nrow(outliers) > 0) {
+    message("ANOMALY [", label, "]: ", nrow(outliers), " months with unusual row counts:")
+    print(outliers %>% select(file, total_rows))
+  } else {
+    message("[", label, "]: no anomalies detected.")
+  }
+}
+
+flag_anomalies(od_bus_qc, "OD Bus")
+flag_anomalies(od_train_qc, "OD Train")
+flag_anomalies(node_bus_qc, "Node Bus")
+flag_anomalies(node_train_qc, "Node Train")
+
+# --- Save combined report ---
+quality_report <- bind_rows(
+  od_bus_qc    %>% mutate(dataset = "od_bus"),
+  od_train_qc  %>% mutate(dataset = "od_train"),
+  node_bus_qc  %>% mutate(dataset = "node_bus"),
+  node_train_qc %>% mutate(dataset = "node_train")
+)
+
+write_csv(quality_report, file.path(output_dir, "data_quality_report.csv"))
+message("\nSaved data_quality_report.csv")
+```

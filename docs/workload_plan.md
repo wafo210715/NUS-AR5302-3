@@ -43,10 +43,12 @@
 
 **Remaining:**
 
-- Extract OD subsets from 74 months
-- Extract node subsets
-- Data quality checks
-- Create `report.Rmd` skeleton with shared setup chunk
+- ~~Extract OD subsets from 74 months~~ (done)
+- ~~Extract node subsets~~ (done)
+- ~~Data quality checks~~ (done)
+- ~~Create `report.Rmd` skeleton with shared setup chunk~~ (done: `scripts/report.Rmd`)
+
+**Note (2026-04-05):** All extraction and quality check chunks executed. Subsets in `data/od_subset/` and `data/node_subset/`. Report skeleton at `scripts/report.Rmd`. See `docs/progress_20260405.md` for details.
 
 **Deliverables:**
 
