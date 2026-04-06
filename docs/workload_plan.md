@@ -68,7 +68,7 @@
 
 **Tasks:**
 
-1. **Obtain historical OSM POI snapshots** — Download Geofabrik monthly extracts for Singapore at 4 time points (e.g., 2020-01, 2022-01, 2024-01, 2026-02). Fallback: Overpass API `date:` parameter.
+1. **Obtain historical OSM POI snapshots** — Use Overpass API `date:` parameter for 4 time points (e.g., 2020-01-01, 2022-01-01, 2024-01-01, 2026-02-01). Returns full POI list at each date for LDA re-run. Split Singapore into sub-regions to avoid timeouts.
 2. **Re-run Part 3 LDA pipeline on each snapshot** — Use the same preprocessing, vocabulary, and K value from Part 3. Build document-term matrix per time point, run LDA, extract topic distributions.
 3. **Compare urban function changes over time** — For each station, track dominant topic shifts across snapshots. Aggregate: which function types grew/declined? Are there spatial patterns (e.g., new commercial hubs emerging)?
 4. **Visualize evolution** — Stacked bar charts of topic proportions by year, map panels showing function changes for high-traffic stations.
@@ -93,27 +93,42 @@
 
 **Best fit:** Member interested in GIS/spatial analysis and topic modeling
 
+**Python setup:** Run `uv sync` in the project root before executing any Python scripts. Dependencies: `requests`, `osmnx`, `geopandas`.
+
 **Tasks:**
 
-1. **POI data acquisition** — OSM via Overpass API (or Geofabrik `.osm.pbf` + `osmextract` as fallback). Query `amenity`, `shop`, `leisure`, `tourism`, `office`, `healthcare`, `craft`, `historic` tags within Singapore bounding box. Handle Overpass timeouts by splitting into sub-region queries.
-2. **POI preprocessing** — Extract primary key=value as POI "class" (priority: amenity > shop > leisure > tourism > office > healthcare > craft > historic). Filter: remove classes at <5 stations or >90% stations (stopword analogy). Expected vocab: ~80–150 classes.
-3. **Spatial assignment (document-term matrix)** — 500m buffer around each bus/MRT station (EPSG:3414). Use `sf::st_join()` to assign POIs to stations. Each station = document, POI classes = vocabulary, counts = term frequencies. Filter out stations with <3 total POIs.
-4. **LDA topic modeling** — `topicmodels::LDA()` in R. Start with K=8, validate with held-out likelihood + interpretability. Try K=6, 8, 10, 12. Set alpha=0.1 for sparse topic assignments. Extract beta (topic–word) and gamma (document–topic) distributions.
-5. **Urban function interpretation** — Examine top 10–15 POI classes per topic. Manually label topics (e.g., "Dining & Retail District", "Educational Zone", "Residential Neighborhood", "Commercial Hub", "Recreational Zone").
-6. **Station classification** — Assign each station to its dominant topic. Compute purity score (max gamma). Join to station coordinates.
+1. **POI data acquisition** — OSM via Overpass API (`overpass-api.de`). Query 8 POI keys (`amenity`, `shop`, `leisure`, `tourism`, `office`, `healthcare`, `craft`, `historic`) within Singapore bounding box. Use `out center meta` to get element metadata (version, timestamp, uid). Split into 4 sub-regions to avoid timeouts. Script: `utils/download_pois.py`.
+2. **Data quality analysis** — Compute per-station quality metrics from Overpass metadata: POI count, unique contributors, average version, % named, % version-1. Use ohsome API (`api.ohsome.org/v1`) for aggregate temporal analysis: POI growth curve, mapper activity over time, create/update/delete rates. Script: `utils/ohsome_quality.py`. See `docs/ohsome_api_strategy.md` for Overpass vs ohsome split rationale.
+3. **POI preprocessing** — Extract primary key=value as POI "class" (priority: amenity > shop > leisure > tourism > office > healthcare > craft > historic). **Exclude** `building=residential` and `landuse=residential`. Filter: remove classes at <5 stations or >90% stations (stopword analogy). Expected vocab: ~80–150 classes.
+4. **Spatial assignment (document-term matrix)** — 500m buffer around each bus/MRT station (EPSG:3414). Use `sf::st_join()` to assign POIs to stations. Each station = document, POI classes = vocabulary, counts = term frequencies. Filter out stations with <3 total POIs.
+5. **LDA topic modeling** — `topicmodels::LDA()` in R. Test K=4, 5, 6, 7, 8; select optimal K via topic coherence (C_v metric). Set alpha=0.1, 2000 iterations. Extract beta (topic–word) and gamma (document–topic) distributions. Script: `scripts/part3_poi_lda.Rmd`.
+6. **Urban function interpretation** — Examine top 10–15 POI classes per topic. Manually label topics (e.g., "Dining & Retail District", "Educational Zone", "Commercial Hub", "Recreational Zone").
+7. **Station classification** — Assign each station to its dominant topic. Compute purity score (max gamma). Join to station coordinates and quality metrics.
+8. **Data quality cross-check** — Verify no LDA topic is dominated by low-quality stations (high % v1, few contributors). Flag in interpretation if found.
 
-- Produce 1–2 publication-quality figures (topic–POI distribution, station function map)
+- Produce 2–3 publication-quality figures (POI class distribution, data quality map, topic–POI heatmap, station function map)
 - **Literature contribution:** Find 2–3 papers on POI-based urban function identification, LDA/topic modeling in urban studies, and land use classification. Write 2–3 paragraphs covering these themes.
+
+**Methodology decisions (from literature review, see `docs/paper_synthesis.md`):**
+- LDA chosen over Doc2Vec, supervised embedding, and CLIP zero-shot (see Section 5 of paper_synthesis.md for rationale)
+- OSM POI completeness in Singapore is ~28% (Yeow et al. 2021) — frame results as "analysis of OSM-mapped urban environment"
+- K=4-8 selected via topic coherence, following Lin et al. (2025) who chose K=6 for London
 
 **Note:** This part is fully independent — can start on Day 1 without waiting for Part 1.
 
 **Deliverables:**
 
-- POI dataset (`sg_pois_all.csv`) + document-term matrix (`station_poi_dtm.rds`) + LDA model (`lda_model_k8.rds`) + station classification (`station_topic_classification.csv`) — shared via Google Drive
-- 1–2 figures (topic–POI distribution, station function map)
+- `data/sg_pois_all.csv` — all POIs with tags + metadata
+- `data/station_quality_metrics.csv` — per-station quality scores
+- `data/ohsome_quality_results.json` — aggregate temporal quality data
+- `data/station_poi_counts.csv` — DTM input (station × POI class counts)
+- `data/station_poi_dtm.rds` — document-term matrix
+- `data/lda_model_k{k}.rds` — fitted LDA models (K=4-8)
+- `data/station_topic_classification.csv` — station → dominant topic + purity + coordinates
+- 2–3 figures (POI distribution, quality map, topic heatmap, station function map, campus comparison)
 - Literature contribution: annotated bibliography + draft paragraphs
 
-**Paper section:** Results — Urban Function Identification (~1 page with figures)
+**Paper section:** Results — Urban Function Identification (~1.5 pages with figures, including data quality subsection)
 
 **Dependencies:** None (fully independent)
 
@@ -229,13 +244,14 @@
 1. **Merge conflicts on single .Rmd** — Strict section ownership, frequent pull/commit, group chat coordination. If conflicts persist, switch to child documents (`knit_child()`)
 2. **Part 1 delays block Parts 4, 5** — Kept at 15% workload (mostly done); Parts 2 and 3 are independent of Part 1
 3. **Part 3 delays block Parts 2 and 4** — Part 3 is the critical path; Parts 2 and 4 can start literature contributions early while waiting
-4. **POI data availability** — OpenStreetMap via Overpass API is free for Singapore; Geofabrik `.osm.pbf` as primary fallback (daily updates, ~30MB for Singapore)
+4. **POI data availability** — OpenStreetMap via Overpass API is free for Singapore. Split into sub-region queries to avoid timeouts. Do NOT use `osmextract` (known issues).
 5. **Inconsistent analysis across Parts 2–5** — Agree on shared analysis period and terminology at Day 1 meeting
 6. **Paper cohesion** — Part 6 owns assembly; each part writes self-contained findings; group review session on Day 14–15
-7. **Overpass API reliability for full Singapore POI query** — Use Geofabrik `.osm.pbf` + `osmextract` as primary source to avoid API timeouts entirely
-8. **Sparse document-term matrix** — Many peripheral bus stops have few nearby POIs; filter stations with <3 POIs before LDA, reducing ~5,300 to ~1,500–2,500 active stations
-9. **LDA short-document problem** — Station-level "documents" are short (10–50 non-zero entries); mitigate with lower K, smaller alpha (0.1), and more iterations
-10. **OSM POI coverage bias** — Commercial areas (Orchard, CBD) are well-mapped; residential neighborhoods may be sparse. Acknowledge in Method; NUS-vs-NTU comparison partially controls for this
+7. **OSM POI completeness** — Yeow et al. (2021) found OSM completeness at 28.2% in Tampines. Results must be framed as "analysis of OSM-mapped urban environment" not definitive urban function classification. This is a known limitation, not a flaw in methodology.
+8. **OSM POI coverage bias** — Commercial areas (Orchard, CBD) are well-mapped; residential/industrial areas are sparse. Mitigation: per-station quality metrics flag low-mapping-activity stations; data quality map included as supplementary figure.
+9. **Sparse document-term matrix** — Many peripheral bus stops have few nearby POIs; filter stations with <3 POIs before LDA, reducing ~5,300 to ~1,500–2,500 active stations
+10. **LDA short-document problem** — Station-level "documents" are short (10–50 non-zero entries); mitigate with K=4-8, smaller alpha (0.1), and more iterations
 11. **Literature review fragmentation** — 4 people writing separate lit review contributions risks inconsistency; Part 6 must weave them into a coherent narrative. Mitigation: agree on thematic structure at Day 1 meeting; each part shares annotated bibliography early
-12. **Historical OSM data availability** — Part 2 needs Geofabrik snapshots for 4 time points. If unavailable, fallback to Overpass `date:` parameter or reduce to 2–3 time points
+12. **Historical OSM data availability** — Part 2 uses Overpass `date:` parameter for snapshots. No element metadata available in historical queries — temporal analysis limited to aggregate changes, not per-element lifecycle tracking.
+13. **Python environment** — Python scripts in `utils/` use `uv` for dependency management. Run `uv sync` before executing scripts.
 
