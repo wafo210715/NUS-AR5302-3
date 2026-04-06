@@ -1,0 +1,17 @@
+[project]
+name = "nus-ar5302-beyond-the-campus"
+version = "0.1.0"
+description = "Beyond the Campus: Mapping University Community Travel Patterns and Urban Destinations"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28",
+    "osmnx>=2.0",
+    "geopandas>=0.13",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["utils"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
