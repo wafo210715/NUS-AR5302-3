@@ -40,10 +40,19 @@ dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
 project_colors <- c(
   nus_blue    = "#003D7C",
   ntu_orange  = "#E85D04",
+  smu_red     = "#C8102E",
+  sutd_blue   = "#1B3A6B",
   bus_red     = "#D62828",
   mrt_green   = "#2D6A4F",
   buffer_blue = "#A2D2FF",
   buffer_yel  = "#FFBA08"
+)
+
+university_colors <- c(
+  NUS  = "#003D7C",
+  NTU  = "#E85D04",
+  SMU  = "#C8102E",
+  SUTD = "#1B3A6B"
 )
 
 map_theme <- theme_minimal(base_size = 12) +
@@ -62,7 +71,7 @@ theme_set(theme_minimal(base_size = 12))
      Use it as a reference when building your pipeline. -->
 
 ```{r data-loading-reference, eval=FALSE, message=FALSE}
-# Part 1 outputs — available now
+# Part 1 outputs
 station_mapping   <- read_csv(file.path(data_dir, "station_mapping.csv"),
                              show_col_types = FALSE)
 sg_bus_stops      <- read_csv(file.path(data_dir, "sg_bus_stops_all.csv"),
@@ -70,54 +79,55 @@ sg_bus_stops      <- read_csv(file.path(data_dir, "sg_bus_stops_all.csv"),
 sg_mrt_stations   <- read_csv(file.path(data_dir, "sg_mrt_stations_all.csv"),
                              show_col_types = FALSE)
 
-# OD subset — available after running extraction chunks in part1_identify_stations.Rmd
+# OD subset — available after re-extraction for 4 universities (Aug 2024 - Aug 2025)
 # Example: load one month of bus OD
-od_bus_202501 <- read_csv(
-  file.path(od_subset_dir, "origin_destination_bus_202501.csv"),
+od_bus_202408 <- read_csv(
+  file.path(od_subset_dir, "origin_destination_bus_202408.csv"),
   show_col_types = FALSE
 )
 
-# Node subset — available after extraction
-node_bus_202501 <- read_csv(
-  file.path(node_subset_dir, "transport_node_bus_202501.csv"),
-  show_col_types = FALSE
-)
+# Overture POI data (TBD)
+# overture_pois <- read_csv(file.path(data_dir, "overture_pois/overture_pois_2025-12-17.csv"))
 
-# Part 3 outputs — available after Part 3 delivers
+# Part 2 outputs — available after LDA analysis
 # station_topic_classification <- read_csv(...)
 # lda_model                     <- readRDS(...)
-# sg_pois_all                   <- read_csv(...)
 ```
 
-<!-- ===== PART 1: DATA ===== -->
+<!-- ===== PART 1: DATA & STATION MAPPING ===== -->
 <!-- Part 1 owns: this section, the setup chunk, and Method — Data subsection -->
-<!-- TODO: Write data description and methodology (~1 page) -->
+<!-- 4 universities: NUS, NTU, SMU, SUTD -->
+<!-- Identify bus/MRT stations within 500m of each campus -->
+<!-- Extract OD subsets for Aug 2024 - Aug 2025 -->
 
 <!-- ===== END PART 1 ===== -->
 
-<!-- ===== PART 2: TEMPORAL TRAVEL PATTERNS ===== -->
-<!-- TODO: Year-to-year POI evolution analysis -->
+<!-- ===== PART 2: POI & URBAN FUNCTION IDENTIFICATION ===== -->
+<!-- Overture Maps POI → LDA topic modeling → station classification -->
+<!-- Single snapshot (Dec 2025) for LDA -->
+<!-- Checkpoint: POI quality map, K selection plot, station classification map -->
 
 <!-- ===== END PART 2 ===== -->
 
-<!-- ===== PART 3: POI & LDA URBAN FUNCTION ===== -->
-<!-- TODO: POI data acquisition, LDA modeling, station classification -->
+<!-- ===== PART 3: TEMPORAL TRAVEL PATTERNS ===== -->
+<!-- Monthly OD analysis: Aug 2024 - Aug 2025 -->
+<!-- Academic calendar periods: semester (Aug-Nov, Jan-Apr), exam (Dec, May), vacation (Jun-Jul) -->
+<!-- Intra-day analysis: morning/afternoon/evening -->
+<!-- Checkpoint: monthly trip volumes with period shading -->
 
 <!-- ===== END PART 3 ===== -->
 
-<!-- ===== PART 4: DESTINATION FUNCTION ANALYSIS ===== -->
-<!-- TODO: Cross-reference LDA with OD data, comparative analysis -->
+<!-- ===== PART 4: COMPARATIVE ANALYSIS ===== -->
+<!-- Inter-university comparison of travel patterns -->
+<!-- Destination function analysis (cross-reference with LDA) -->
+<!-- Travel distance, catchment area, statistical tests -->
+<!-- Checkpoint: radar chart, Sankey diagram -->
 
 <!-- ===== END PART 4 ===== -->
 
-<!-- ===== PART 5: COMPARATIVE NETWORK & STATISTICAL ANALYSIS ===== -->
-<!-- TODO: Jaccard similarity, travel distance, catchment, statistical tests -->
-
-<!-- ===== END PART 5 ===== -->
-
-<!-- ===== PART 6: PAPER ASSEMBLY ===== -->
-<!-- Part 6 owns: YAML header, Abstract, Introduction, Literature Review,
+<!-- ===== PART 5: PAPER ASSEMBLY ===== -->
+<!-- Part 5 owns: YAML header, Abstract, Introduction, Literature Review,
      Method (except Data subsection), Conclusion, References -->
 <!-- TODO: Weave literature contributions, write narrative sections -->
 
-<!-- ===== END PART 6 ===== -->
+<!-- ===== END PART 5 ===== -->

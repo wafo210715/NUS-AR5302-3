@@ -1,43 +1,85 @@
-# Todo
+# Todo (v2)
 
-## Part 1: Data Infrastructure & Station Mapping
+## Phase 0: Setup (DONE)
+- [x] Clean up obsolete OSM-specific files
+- [x] Update project configuration (pyproject.toml, CLAUDE.md)
+- [x] Rewrite documentation (workload_plan.md, todo.md)
 
-- [x] Obtain NUS and NTU campus boundary GeoJSON (from OSM)
-- [x] Obtain bus stop coordinates (LTA DataMall GeoJSON)
-- [x] Obtain MRT station coordinates (LTA DataMall GeoJSON)
-- [x] Build Part 1 identification script (500m buffer, intersect, visualize)
-- [x] Save shared CSVs for Parts 2-4 (sg_bus_stops_all.csv, sg_mrt_stations_all.csv)
-- [x] Map MRT station names to OD data station codes (e.g. "KENT RIDGE" → "CC24")
-- [x] Write R script to extract OD subsets from 74 months (filter by station codes)
-- [x] Write R script to extract node subsets from 74 months
-- [x] Run data quality checks (row counts, missing months, anomalies)
-- [x] Create report.Rmd skeleton with shared setup chunk
+## Part 1: Station Mapping (4 Universities)
 
-## Extraction Chunks Added (2026-04-05)
+### Campus Boundaries
+- [x] NUS Kent Ridge boundary (`data/nus_boundary.geojson`)
+- [x] NTU boundary (`data/ntu_boundary.geojson`)
+- [ ] SMU Bras Basah boundary (get from OSM)
+- [ ] SUTD Tampines boundary (get from OSM)
 
-The following chunks have been added to `scripts/part1_identify_stations.Rmd` (all `eval=FALSE`, run once in R console):
-- `extract-setup` — load station codes, create output directories
-- `extract-od-bus` — filter 74 months of bus OD by campus station codes
-- `extract-od-train` — filter 74 months of train OD by campus MRT codes
-- `extract-node-bus` — filter 74 months of bus node data
-- `extract-node-train` — filter 74 months of train node data
-- `data-quality` — row counts, missing months, station coverage, anomaly detection
+### Station Identification
+- [x] Bus stop coordinates (`data/sg_bus_stops_all.csv`, 5,166 stops)
+- [x] MRT station coordinates (`data/sg_mrt_stations_all.csv`)
+- [x] MRT code lookup (`data/mrt_station_codes.csv`)
+- [ ] Identify stations near SMU (500m buffer)
+- [ ] Identify stations near SUTD (500m buffer)
+- [ ] Build `station_mapping.csv` for all 4 universities
 
-## Remaining
-- [x] Run extraction chunks in R console and verify outputs
-- [x] Run data quality checks and review report
-- [x] Share extracted subsets via Google Drive
+### OD Data Extraction (Aug 2024 – Aug 2025)
+- [ ] Re-extract OD subsets for 4 universities (13 months: 202408–202508)
+- [ ] Re-extract node subsets for same period
+- [ ] Data quality check: no missing months, reasonable volumes
 
-## Visualization Improvements (low priority — for paper if needed)
+### Checkpoint 1: Station Mapping Validation
+- [ ] Map: 4 campuses with buffers + identified stations
+- [ ] Table: Station count per university
 
-- [ ] Add scale bar and north arrow to campus maps
-- [ ] Add legend for bus stops vs MRT stations
-- [ ] Reduce label clutter (currently all bus stop codes shown)
-- [ ] Combine NUS + NTU into one figure with facet_wrap()
+## Part 2: POI + LDA Urban Function Identification
 
-## Parts 2-5
+### Overture POI Data
+- [ ] Build `utils/download_overture_pois.py`
+- [ ] Download 12 monthly snapshots from Source Cooperative
+- [ ] Data quality check: POI counts, category distribution, operating_status
 
-- [ ] Part 2: Temporal travel pattern analysis
-- [ ] Part 3: Spatial destination & POI analysis
-- [ ] Part 4: Comparative network & statistical analysis
-- [ ] Part 5: Literature review, methodology & paper assembly
+### LDA Analysis
+- [ ] Update `scripts/part3_poi_lda_yk.Rmd` for Overture input
+- [ ] Preprocess Overture categories (categories.primary)
+- [ ] Build document-term matrix (stations × POI categories)
+- [ ] Run LDA for K=4-8
+- [ ] K selection via C_v coherence
+- [ ] Interpret and label topics
+
+### Checkpoints 2 & 4 & 5
+- [ ] CP2: Overture POI quality heatmap + category bars
+- [ ] CP4: K selection coherence plot
+- [ ] CP5: Station classification map
+
+## Part 3: Temporal Travel Pattern Analysis
+
+- [ ] Define academic calendar periods (semester/exam/vacation)
+- [ ] Monthly OD analysis by university
+- [ ] Semester vs vacation comparison
+- [ ] Intra-day analysis (morning/afternoon/evening)
+- [ ] Destination function cross-reference with LDA
+
+### Checkpoint 6
+- [ ] Monthly trip volume with period shading
+- [ ] University × Month heatmap
+
+## Part 4: Comparative Analysis
+
+- [ ] Destination overlap (Jaccard similarity)
+- [ ] Function preference comparison
+- [ ] Travel distance distributions
+- [ ] Catchment area analysis
+- [ ] Statistical tests
+
+### Checkpoint 7
+- [ ] Radar chart: function preferences
+- [ ] Sankey: university → destination function
+
+## Part 5: Paper Assembly
+
+- [ ] Collect draft sections
+- [ ] Write Introduction
+- [ ] Write Literature Review
+- [ ] Write Method
+- [ ] Write Results
+- [ ] Write Conclusion + Abstract
+- [ ] Proofread
