@@ -1,201 +1,372 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Project Roadmap" id="roadmap">
-    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
 
-        <!-- Title -->
-        <mxCell id="title" value="Beyond the Campus: Project Roadmap" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="600" y="40" width="400" height="40" as="geometry" />
+        <!-- ============================================================ -->
+        <!-- TITLE -->
+        <!-- ============================================================ -->
+        <mxCell id="title" value="&lt;b&gt;Beyond the Campus: Project Roadmap&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;" vertex="1" parent="1">
+          <mxGeometry x="700" y="20" width="500" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Deadline: Sunday 19 April 2026 | 6 Parts | ~10 page PDF academic paper" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="700" y="55" width="500" height="25" as="geometry" />
         </mxCell>
 
-        <!-- Timeline Header -->
-        <mxCell id="timeline-header" value="Timeline (Days)" style="swimlane;fontSize=14;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="80" y="100" width="1480" height="60" as="geometry" />
-        </mxCell>
+        <!-- ============================================================ -->
+        <!-- ROW 1: PART 1 (left) + PART 3 (right) - Independent starters -->
+        <!-- ============================================================ -->
 
-        <!-- Day Labels -->
-        <mxCell id="day1-3" value="Days 1-3&#xa;Setup &amp; Data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="120" y="120" width="100" height="40" as="geometry" />
+        <!-- PART 1: Data Infrastructure -->
+        <mxCell id="p1-header" value="&lt;b&gt;Part 1: Data Infrastructure &amp;amp; Station Mapping (15%)&lt;/b&gt;" style="swimlane;startSize=35;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="660" height="280" as="geometry" />
         </mxCell>
-        <mxCell id="day4-7" value="Days 4-7&#xa;Core Analysis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="260" y="120" width="100" height="40" as="geometry" />
+        <mxCell id="p1-status" value="DONE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6c8ebf;strokeColor=#4a7ab5;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="570" y="107" width="60" height="22" as="geometry" />
         </mxCell>
-        <mxCell id="day8-11" value="Days 8-11&#xa;Integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="400" y="120" width="100" height="40" as="geometry" />
+        <!-- P1 sub-tasks -->
+        <mxCell id="p1-t1" value="Campus boundaries&#xa;(NUS + NTU polygons)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="145" width="150" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="day12-14" value="Days 12-14&#xa;Draft Results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="540" y="120" width="100" height="40" as="geometry" />
+        <mxCell id="p1-t2" value="Bus stop coords&#xa;(5,166 stops)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="145" width="120" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="day15-18" value="Days 15-18&#xa;Review &amp; Submit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="680" y="120" width="100" height="40" as="geometry" />
+        <mxCell id="p1-t3" value="MRT station coords&#xa;(~130 stations)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="350" y="145" width="130" height="40" as="geometry" />
         </mxCell>
+        <mxCell id="p1-t4" value="500m buffer&#xa;station mapping" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="490" y="145" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-t5" value="OD extraction&#xa;(74 months)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="200" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-t6" value="Node extraction&#xa;(tap-in/tap-out)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="190" y="200" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-t7" value="Data quality&#xa;checks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="200" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-t8" value="report.Rmd&#xa;setup chunk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="200" width="110" height="40" as="geometry" />
+        </mxCell>
+        <!-- P1 outputs -->
+        <mxCell id="p1-out-label" value="Deliverables:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="255" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-out1" value="station_mapping.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0fe;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="140" y="255" width="120" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-out2" value="OD/node subsets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0fe;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="270" y="255" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-out3" value="station_quality&#xa;summary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0fe;strokeColor=#6c8ebf;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="380" y="255" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-section" value="Paper: Method - Data subsection (~1p)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="290" width="250" height="20" as="geometry" />
+        </mxCell>
+        <!-- P1 internal arrows -->
+        <mxCell id="p1-a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="p1-t1" target="p1-t4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="p1-t2" target="p1-t4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="p1-t3" target="p1-t4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-a4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="p1-t4" target="p1-t5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-a5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="p1-t5" target="p1-t6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p1-a6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=1;" edge="1" parent="1" source="p1-t6" target="p1-t7"><mxGeometry relative="1" as="geometry" /></mxCell>
 
-        <!-- Part 1: Data Infrastructure -->
-        <mxCell id="part1-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="120" y="200" width="660" height="100" as="geometry" />
+        <!-- PART 3: POI Data & LDA -->
+        <mxCell id="p3-header" value="&lt;b&gt;Part 3: POI Data &amp;amp; LDA Urban Function Identification (20%)&lt;/b&gt;" style="swimlane;startSize=35;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="100" width="780" height="280" as="geometry" />
         </mxCell>
-        <mxCell id="part1-title" value="Part 1: Data Infrastructure &amp; Station Mapping (15%)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="140" y="210" width="400" height="30" as="geometry" />
+        <mxCell id="p3-status" value="IN PROGRESS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82b366;strokeColor=#5b8c3e;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="107" width="90" height="22" as="geometry" />
         </mxCell>
-        <mxCell id="part1-desc" value="Campus boundaries, station mapping, OD/node extraction" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="140" y="240" width="400" height="20" as="geometry" />
+        <!-- P3 sub-tasks -->
+        <mxCell id="p3-t1" value="POI acquisition&#xa;Overpass API (56,627)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="145" width="140" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="part1-bar" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6c8ebf;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="120" y="200" width="260" height="100" as="geometry" />
+        <mxCell id="p3-t1b" value="Coverage validation&#xa;4 sub-regions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="910" y="145" width="120" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="part1-status" value="✓ DONE" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
-          <mxGeometry x="140" y="235" width="100" height="30" as="geometry" />
+        <mxCell id="p3-t2" value="Data quality&#xa;ohsome temporal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="145" width="110" height="40" as="geometry" />
         </mxCell>
+        <mxCell id="p3-t3" value="POI preprocessing&#xa;filter vocab" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="145" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-t4" value="Spatial assignment&#xa;DTM (500m buffer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="200" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-t5" value="LDA modeling&#xa;K=5 (C_v=0.5063)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="900" y="200" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-t6" value="Topic interpretation&#xa;&amp; labeling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="200" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-t7" value="Station&#xa;classification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="200" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-t8" value="Literature&#xa;(2-3 papers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="200" width="100" height="40" as="geometry" />
+        </mxCell>
+        <!-- P3 outputs -->
+        <mxCell id="p3-out-label" value="Deliverables:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="255" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-out1" value="sg_pois_all.csv&#xa;56,627 POIs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f2e6;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="840" y="250" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-out2" value="station_poi_counts&#xa;(DTM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f2e6;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="950" y="250" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-out3" value="lda_model_k5.rds&#xa;+ beta/gamma" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f2e6;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="250" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-out4" value="station_topic&#xa;_classification.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f2e6;strokeColor=#82b366;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="250" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-section" value="Paper: Results - Urban Function Identification (~1.5p)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="760" y="290" width="300" height="20" as="geometry" />
+        </mxCell>
+        <!-- P3 internal arrows -->
+        <mxCell id="p3-a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="p3-t1" target="p3-t1b"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="p3-t1b" target="p3-t2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="p3-t2" target="p3-t3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-a4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="p3-t3" target="p3-t4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-a5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="p3-t4" target="p3-t5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-a6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="p3-t5" target="p3-t6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3-a7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=1;" edge="1" parent="1" source="p3-t6" target="p3-t7"><mxGeometry relative="1" as="geometry" /></mxCell>
 
-        <!-- Part 3: POI Data & LDA -->
-        <mxCell id="part3-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="120" y="320" width="980" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="part3-title" value="Part 3: POI Data &amp; LDA Urban Function Identification (20%)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="140" y="330" width="450" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="part3-desc" value="POI acquisition, quality validation, LDA K=5, station classification" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="140" y="360" width="450" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="part3-bar" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82b366;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="120" y="320" width="580" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="part3-status" value="✓ IN PROGRESS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#ffffff" vertex="1" parent="1">
-          <mxGeometry x="140" y="355" width="120" height="30" as="geometry" />
-        </mxCell>
+        <!-- ============================================================ -->
+        <!-- ROW 2: PART 5 (left, depends on P1) + PART 2 (right, depends on P3) -->
+        <!-- ============================================================ -->
 
-        <!-- Part 5: Comparative Analysis -->
-        <mxCell id="part5-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
-          <mxGeometry x="120" y="440" width="540" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="part5-title" value="Part 5: Comparative Network &amp; Statistical Analysis (20%)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="140" y="450" width="400" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="part5-desc" value="Distance analysis, Jaccard similarity, statistical testing" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="140" y="480" width="400" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="part5-bar" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d79b00;strokeColor=#d79b00;" vertex="1" parent="1">
-          <mxGeometry x="260" y="440" width="400" height="100" as="geometry" />
-        </mxCell>
-
-        <!-- Part 2: Historical Evolution -->
-        <mxCell id="part2-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="120" y="560" width="620" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="part2-title" value="Part 2: Year-to-Year POI Evolution Analysis (20%)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="140" y="570" width="400" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="part2-desc" value="Historical snapshots (2020, 2022, 2024, 2026), topic evolution" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="140" y="600" width="400" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="part2-bar" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d6b656;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="400" y="560" width="340" height="100" as="geometry" />
-        </mxCell>
-
-        <!-- Part 4: Destination Function -->
-        <mxCell id="part4-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="120" y="680" width="620" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="part4-title" value="Part 4: Destination Function Analysis (10%)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="140" y="690" width="350" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="part4-desc" value="LDA × OD cross-reference, NUS vs NTU comparison" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="140" y="720" width="350" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="part4-bar" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b85450;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="400" y="680" width="340" height="100" as="geometry" />
-        </mxCell>
-
-        <!-- Part 6: Paper Assembly -->
-        <mxCell id="part6-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="120" y="800" width="1320" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="part6-title" value="Part 6: Paper Assembly (15%)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="140" y="810" width="300" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="part6-desc" value="Weave literature, write Intro/Method/Conclusion, abstract, proofread" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="140" y="840" width="450" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="part6-bar" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9673a6;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="540" y="800" width="900" height="100" as="geometry" />
-        </mxCell>
-
-        <!-- Dependency Arrows -->
-        <mxCell id="arrow1-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="part1-box" target="part5-box">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="arrow1-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="part1-box" target="part4-box">
+        <!-- Cross-dependency arrows from Row 1 to Row 2 -->
+        <mxCell id="dep-1-5" value="OD data +&#xa;station mapping" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;dashed=1;fontSize=9;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p1-out2" target="p5-t1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="80" y="390" />
-              <mxPoint x="80" y="730" />
+              <mxPoint x="320" y="410" />
+              <mxPoint x="200" y="410" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="arrow3-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="part3-box" target="part2-box">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="arrow3-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="part3-box" target="part4-box">
+        <mxCell id="dep-3-2" value="LDA pipeline&#xa;+ K=5 model" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=2;dashed=1;fontSize=9;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p3-out3" target="p2-t1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1100" y="370" />
-              <mxPoint x="1100" y="730" />
-            </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="arrow-all-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="part4-box" target="part6-box">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="80" y="850" />
+              <mxPoint x="1110" y="410" />
             </Array>
           </mxGeometry>
         </mxCell>
 
-        <!-- Legend -->
-        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="1000" y="200" width="400" height="180" as="geometry" />
+        <!-- PART 5: Comparative Analysis -->
+        <mxCell id="p5-header" value="&lt;b&gt;Part 5: Comparative Network &amp;amp; Statistical Analysis (20%)&lt;/b&gt;" style="swimlane;startSize=35;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="430" width="660" height="260" as="geometry" />
         </mxCell>
-        <mxCell id="legend-title" value="Legend" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="1020" y="210" width="100" height="30" as="geometry" />
+        <mxCell id="p5-status" value="PENDING" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d79b00;strokeColor=#b37400;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="437" width="70" height="22" as="geometry" />
         </mxCell>
-        <mxCell id="legend-done" value="✓ DONE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6c8ebf;strokeColor=#6c8ebf;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1020" y="250" width="80" height="30" as="geometry" />
+        <mxCell id="p5-dep" value="Depends on: Part 1 (OD data)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#999999;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="60" y="437" width="200" height="22" as="geometry" />
         </mxCell>
-        <mxCell id="legend-progress" value="IN PROGRESS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82b366;strokeColor=#82b366;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1110" y="250" width="100" height="30" as="geometry" />
+        <!-- P5 sub-tasks -->
+        <mxCell id="p5-t1" value="Destination overlap&#xa;Jaccard + rank corr" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="475" width="140" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="legend-pending" value="PENDING" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d6b656;strokeColor=#d6b656;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1220" y="250" width="80" height="30" as="geometry" />
+        <mxCell id="p5-t2" value="Travel distance&#xa;haversine analysis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="210" y="475" width="130" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="legend-dep" value="Dependency Arrow" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1020" y="300" width="120" height="30" as="geometry" />
+        <mxCell id="p5-t3" value="Catchment areas&#xa;5/10/15/20 km zones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="350" y="475" width="130" height="40" as="geometry" />
         </mxCell>
-
-        <!-- Key Milestones -->
-        <mxCell id="milestones-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="1000" y="400" width="400" height="140" as="geometry" />
+        <mxCell id="p5-t4" value="Statistical tests&#xa;Chi-square test" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="490" y="475" width="120" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="milestones-title" value="Key Milestones" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="1020" y="410" width="150" height="30" as="geometry" />
+        <mxCell id="p5-t5" value="Outside the box&#xa;Gini / modal split" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="530" width="130" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="milestone1" value="Day 1-3: Part 1 delivers data, Part 3 starts" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="1020" y="450" width="350" height="20" as="geometry" />
+        <mxCell id="p5-t6" value="2-3 pub figures&#xa;Sankey + distance +&#xa;catchment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="200" y="525" width="120" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="milestone2" value="Day 7-8: Part 3 delivers LDA model → Parts 2 &amp; 4 start" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="1020" y="475" width="350" height="20" as="geometry" />
+        <mxCell id="p5-t7" value="Literature&#xa;(2-3 papers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="530" width="100" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="milestone3" value="Day 11-12: Draft sections due to Part 6" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11" vertex="1" parent="1">
-          <mxGeometry x="1020" y="500" width="350" height="20" as="geometry" />
-        </mxCell>
-        <mxCell id="milestone4" value="Day 18 (Apr 19): Final submission deadline" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1;fontColor=#b85450" vertex="1" parent="1">
-          <mxGeometry x="1020" y="525" width="350" height="20" as="geometry" />
+        <mxCell id="p5-section" value="Paper: Results - Comparative Analysis (~1.5p)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="590" width="300" height="20" as="geometry" />
         </mxCell>
 
-        <!-- Deadline Banner -->
-        <mxCell id="deadline" value="📅 DEADLINE: Sunday 19 April 2026" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="550" y="940" width="460" height="40" as="geometry" />
+        <!-- PART 2: Historical Evolution -->
+        <mxCell id="p2-header" value="&lt;b&gt;Part 2: Year-to-Year POI Evolution Analysis (20%)&lt;/b&gt;" style="swimlane;startSize=35;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="430" width="780" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-status" value="TOOLS READY" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d6b656;strokeColor=#b3a047;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="437" width="90" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dep" value="Depends on: Part 3 (LDA pipeline)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#999999;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="760" y="437" width="220" height="22" as="geometry" />
+        </mxCell>
+        <!-- P2 sub-tasks -->
+        <mxCell id="p2-t1" value="Historical snapshots&#xa;Overpass date:&#xa;2020 / 2022 / 2024 / 2026" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="475" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-t2" value="ohsome cross-&#xa;validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="930" y="475" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-t3" value="LDA on each&#xa;snapshot (K=5)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="475" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-t4" value="Compare topic&#xa;evolution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="475" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-t5" value="Visualize&#xa;stacked bar + maps" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="475" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-t6" value="Literature&#xa;(2-3 papers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="540" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-section" value="Paper: Results - Urban Function Evolution (~1.5p)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="760" y="600" width="300" height="20" as="geometry" />
+        </mxCell>
+        <!-- P2 internal arrows -->
+        <mxCell id="p2-a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d6b656;strokeWidth=1;" edge="1" parent="1" source="p2-t1" target="p2-t2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d6b656;strokeWidth=1;" edge="1" parent="1" source="p2-t2" target="p2-t3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d6b656;strokeWidth=1;" edge="1" parent="1" source="p2-t3" target="p2-t4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2-a4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d6b656;strokeWidth=1;" edge="1" parent="1" source="p2-t4" target="p2-t5"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============================================================ -->
+        <!-- ROW 3: PART 4 (center, depends on P1 + P3) -->
+        <!-- ============================================================ -->
+
+        <mxCell id="dep-1-4" value="OD data" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;strokeWidth=2;dashed=1;fontSize=9;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p1-header" target="p4-header">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="30" y="250" />
+              <mxPoint x="30" y="770" />
+              <mxPoint x="500" y="770" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dep-3-4" value="LDA model +&#xa;classification" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#82b366;strokeWidth=2;dashed=1;fontSize=9;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="p3-out4" target="p4-t1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1225" y="770" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- PART 4: Destination Function -->
+        <mxCell id="p4-header" value="&lt;b&gt;Part 4: Destination Function Analysis (10%)&lt;/b&gt;" style="swimlane;startSize=35;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="730" width="780" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-status" value="PREPARED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b85450;strokeColor=#943d3d;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="737" width="70" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-dep" value="Depends on: Part 1 (OD data) + Part 3 (LDA model)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#999999;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="360" y="737" width="320" height="22" as="geometry" />
+        </mxCell>
+        <!-- P4 sub-tasks -->
+        <mxCell id="p4-t1" value="LDA × OD&#xa;cross-reference" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="775" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-t2" value="NUS vs NTU&#xa;proportional compare" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="490" y="775" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-t3" value="Jaccard similarity&#xa;on topic overlap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="630" y="775" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-t4" value="Chi-square test&#xa;topic distributions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="760" y="775" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-t5" value="Intra-day POI&#xa;dynamics (TBD)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#b85450;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="890" y="775" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-t6" value="Opening hours&#xa;4,473 POIs (7.9%)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="830" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-t7" value="Literature&#xa;(2-3 papers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="490" y="830" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4-section" value="Paper: Results - Destination Function Comparison (~1p)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="360" y="880" width="300" height="20" as="geometry" />
+        </mxCell>
+        <!-- P4 internal arrows -->
+        <mxCell id="p4-a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;strokeWidth=1;" edge="1" parent="1" source="p4-t1" target="p4-t2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p4-a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;strokeWidth=1;" edge="1" parent="1" source="p4-t2" target="p4-t3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p4-a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;strokeWidth=1;" edge="1" parent="1" source="p4-t3" target="p4-t4"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============================================================ -->
+        <!-- ROW 4: PART 6 - Paper Assembly (depends on all) -->
+        <!-- ============================================================ -->
+
+        <!-- Dependency arrows from Parts 2,4,5 to Part 6 -->
+        <mxCell id="dep-5-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d79b00;strokeWidth=2;dashed=1;" edge="1" parent="1" source="p5-header" target="p6-header">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="30" y="560" />
+              <mxPoint x="30" y="1010" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dep-4-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;strokeWidth=2;dashed=1;" edge="1" parent="1" source="p4-header" target="p6-header">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="1010" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dep-2-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#d6b656;strokeWidth=2;dashed=1;" edge="1" parent="1" source="p2-header" target="p6-header">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1530" y="560" />
+              <mxPoint x="1530" y="1010" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- PART 6: Paper Assembly -->
+        <mxCell id="p6-header" value="&lt;b&gt;Part 6: Paper Assembly (15%)&lt;/b&gt;" style="swimlane;startSize=35;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="990" width="780" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-status" value="PENDING" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9673a6;strokeColor=#7a5f8f;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="997" width="70" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-dep" value="Depends on: ALL Parts (draft sections + literature)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#999999;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="360" y="997" width="300" height="22" as="geometry" />
+        </mxCell>
+        <!-- P6 sub-tasks -->
+        <mxCell id="p6-t1" value="Weave literature&#xa;from Parts 2-5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="1035" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-t2" value="Introduction&#xa;(~1 page)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="490" y="1035" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-t3" value="Method section&#xa;(~1-1.5 pages)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1035" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-t4" value="Conclusion&#xa;(~0.5-1 page)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="720" y="1035" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-t5" value="Abstract&#xa;(150-250 words)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="840" y="1035" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-t6" value="Proofread +&#xa;consistency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="960" y="1035" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6-section" value="Paper: YAML + Abstract + Intro + Lit Review + Method + Conclusion + References" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="360" y="1085" width="450" height="20" as="geometry" />
+        </mxCell>
+        <!-- P6 internal arrows -->
+        <mxCell id="p6-a1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;strokeWidth=1;" edge="1" parent="1" source="p6-t1" target="p6-t2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p6-a2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;strokeWidth=1;" edge="1" parent="1" source="p6-t2" target="p6-t3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p6-a3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;strokeWidth=1;" edge="1" parent="1" source="p6-t3" target="p6-t4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p6-a4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;strokeWidth=1;" edge="1" parent="1" source="p6-t4" target="p6-t5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p6-a5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9673a6;strokeWidth=1;" edge="1" parent="1" source="p6-t5" target="p6-t6"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ============================================================ -->
+        <!-- DEADLINE -->
+        <!-- ============================================================ -->
+        <mxCell id="deadline" value="DEADLINE: Sunday 19 April 2026" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="570" y="1200" width="320" height="40" as="geometry" />
         </mxCell>
 
       </root>
