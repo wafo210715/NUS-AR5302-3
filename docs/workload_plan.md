@@ -68,14 +68,19 @@
 
 **Tasks:**
 
-1. **Obtain historical OSM POI snapshots** — Use Overpass API `date:` parameter for 4 time points (e.g., 2020-01-01, 2022-01-01, 2024-01-01, 2026-02-01). Returns full POI list at each date for LDA re-run. Split Singapore into sub-regions to avoid timeouts.
-2. **Re-run Part 3 LDA pipeline on each snapshot** — Use the same preprocessing, vocabulary, and K value from Part 3. Build document-term matrix per time point, run LDA, extract topic distributions.
+1. **Obtain historical OSM POI snapshots** — Use Overpass API `date:` parameter for 4 time points at 2-year intervals: 2020-01-01, 2022-01-01, 2024-01-01, 2026-01-01 (avoiding 2023 mapping spike, 2025 incomplete). Returns full POI list at each date for LDA re-run. Split Singapore into 4 sub-regions to avoid timeouts.
+2. **Re-run Part 3 LDA pipeline on each snapshot** — Use the same preprocessing, vocabulary, and K value (K=5) from Part 3. Build document-term matrix per time point, run LDA, extract topic distributions.
 3. **Compare urban function changes over time** — For each station, track dominant topic shifts across snapshots. Aggregate: which function types grew/declined? Are there spatial patterns (e.g., new commercial hubs emerging)?
 4. **Visualize evolution** — Stacked bar charts of topic proportions by year, map panels showing function changes for high-traffic stations.
 - Produce 2–3 publication-quality figures
 - **Literature contribution:** Find 2–3 papers on urban function evolution, POI-based longitudinal urban studies, and Singapore's urban development. Write 2–3 paragraphs.
 
 **Note:** This part reuses Part 3's LDA pipeline — does not need to build it from scratch. Expected start: Day 7–8 after Part 3 delivers the pipeline.
+
+**Tools Created (2026-04-08):**
+- `utils/download_historical_pois.py` — Overpass date: snapshot downloader
+- `utils/visualize_historical_pois.py` — Overpass vs ohsome comparison visualization
+- `docs/part2_data_acquisition_guide.md` — Complete data acquisition strategy
 
 **Deliverables:**
 
@@ -93,7 +98,7 @@
 
 **Best fit:** Member interested in GIS/spatial analysis and topic modeling
 
-**Python setup:** Run `uv sync` in the project root before executing any Python scripts. Dependencies: `requests`, `osmnx`, `geopandas`.
+**Python setup:** Run `uv sync` in the project root before executing any Python scripts. Dependencies: `requests`, `osmnx`, `geopandas`, `gensim`, `matplotlib`.
 
 **Tasks:**
 
@@ -112,9 +117,24 @@
 **Methodology decisions (from literature review, see `docs/paper_synthesis.md`):**
 - LDA chosen over Doc2Vec, supervised embedding, and CLIP zero-shot (see Section 5 of paper_synthesis.md for rationale)
 - OSM POI completeness in Singapore is ~28% (Yeow et al. 2021) — frame results as "analysis of OSM-mapped urban environment"
-- K=4-8 selected via topic coherence, following Lin et al. (2025) who chose K=6 for London
+- K=5 selected via gensim C_v coherence (0.5063), following Lin et al. (2025) who chose K=6 for London
 
 **Note:** This part is fully independent — can start on Day 1 without waiting for Part 1.
+
+**Completed (2026-04-08):**
+
+- POI acquisition: 56,627 POIs downloaded across 4 sub-regions (no API timeouts)
+- POI coverage validation: 2×2 heatmap + overview map (`utils/visualize_poi_coverage.py`)
+- Temporal quality analysis: POI growth (+83.3% 2020-2026), mapper activity, yearly bar chart (`utils/visualize_temporal_quality.py`)
+- LDA K=5 validation: gensim C_v coherence calculation confirming K=5 optimal (`utils/calculate_topic_coherence_gensim.py`)
+- Coherence scores: K=5 (0.5063) > K=8 (0.5027) > K=7 (0.4965) > K=6 (0.4831) > K=4 (0.4611)
+- Data files: `data/sg_pois_all.csv`, `data/ohsome_quality_results.json`, `data/coherence_scores_gensim.json`, `data/lda_beta/beta_k*.csv`
+
+**Remaining:**
+
+- Literature contribution (2–3 papers on POI-based urban function identification)
+- Integrate findings into `scripts/part3_poi_lda_yk.Rmd`
+- Merge to main branch
 
 **Deliverables:**
 
@@ -144,12 +164,22 @@
 2. **POI-based comparative analysis:**
   - Jaccard similarity on destination function distributions (NUS vs NTU topic overlap)
   - Chi-square test on destination topic distributions (test if NUS and NTU communities have significantly different destination function preferences)
-3. **Intra-day POI dynamics (supplementary, stretch goal)** — Use OSM `opening_hours` tag. Classify POI classes as daytime-only, evening, 24h, or unspecified. Weight topic profiles by time-of-day. Only pursue if time permits.
+3. **Intra-day POI dynamics (TBD)** — Use OSM `opening_hours` tag aligned with OD time periods. Strategy to be discussed based on:
+   - OD tap-in/tap-out time distribution
+   - Opening hours coverage (currently 7.9% of POIs)
+   - Whether to use time-period-specific POI subsets or OD-weighted analysis
 
 - Produce 1–2 publication-quality figures (NUS vs NTU destination function comparison)
 - **Literature contribution:** Find 2–3 papers on destination choice, university community travel behavior, and urban function vs travel demand. Write 2–3 paragraphs.
 
 **Note:** This part starts after Part 1 delivers OD data AND Part 3 delivers the LDA model. Expected start: Day 7–8.
+
+**Prepared (2026-04-08):**
+- Opening hours extraction: 4,473 POIs (7.9% of 56,627) with `opening_hours` tag
+- Time period coverage: morning 50.3%, afternoon 93.8%, evening 90.7%
+- Tools created: `utils/extract_opening_hours_pois.py`, `utils/visualize_opening_hours_pois.py`
+- Data guide: `docs/part4_poi_metadata_guide.md` (answers 3 key questions on LDA data basis, metadata fields)
+- **Intra-day dynamics strategy: TBD** — requires OD time distribution analysis to decide approach
 
 **Deliverables:**
 
