@@ -783,34 +783,6 @@ ggsave(file.path(figures_dir, "part3_station_function_map.png"),
 message("\n=== All figures saved to ", figures_dir, " ===")
 ```
 
-```{r part3-data-quality-validation, message=FALSE, warning=FALSE, fig.width=10, fig.height=6}
-# ── Data Quality Validation: POI Coverage ──
-# This section validates that all 4 sub-regions were successfully crawled
-
-# Load coverage summary
-coverage_summary <- jsonlite::fromJSON(file.path(data_dir, "poi_coverage_summary.json"))
-
-message("\n=== POI Coverage Validation ===")
-message("Total POIs: ", format(coverage_summary$total_pois, big.mark=","))
-
-# Display regional breakdown
-region_df <- as.data.frame(do.call(rbind, lapply(names(coverage_summary$regions), function(name) {
-  r <- coverage_summary$regions[[name]]
-  data.frame(
-    Region = name,
-    Count = r$count,
-    Percentage = r$percentage
-  )
-})))
-
-print(region_df)
-
-# Add text annotation about data quality
-if (coverage_summary$is_below_expectation) {
-  message("\nNote: POI count is below expected range (100K-200K)")
-  message("Possible causes: API timeouts, overlap deduplication, or OSM sparsity")
-}
-```
 
 ```{r part3-temporal-quality-plots, message=FALSE, warning=FALSE, eval=FALSE}
 # ── Temporal Data Quality Analysis ──
