@@ -11,21 +11,38 @@
 
 ## Part 1: Data Infrastructure & Station Mapping (4 Universities)
 
-**Tasks:**
-1. Get SMU and SUTD campus boundaries from OSM (Overpass API)
-2. Identify bus stops and MRT stations within 500m of all 4 campuses
-3. Build `station_mapping.csv` for NUS, NTU, SMU, SUTD
-4. Extract OD subsets for Aug 2024 – Aug 2025 (13 months)
-5. Extract node subsets (tap-in/tap-out) for same period
+**Status: DONE** (see `docs/part1_handoff.md` for full details)
+
+**Completed tasks:**
+1. Got SMU and SUTD campus boundaries from OSM (Overpass API)
+2. Identified bus stops and MRT stations within 100m buffer of all 4 campuses
+3. Built `station_mapping.csv` for NUS, NTU, SMU, SUTD (83 stations total)
+4. OD extraction chunks ready in Rmd (eval=FALSE, not yet run)
+
+**Station counts:**
+| University | Bus Stops | MRT Stations | Total |
+|-----------|-----------|-------------|-------|
+| NUS (Kent Ridge) | 39 | 1 (Kent Ridge CC24) | 40 |
+| NTU | 22 | 0 | 22 |
+| SMU (Bras Basah) | 12 | 2 | 14 |
+| SUTD (Tampines) | 6 | 1 | 7 |
+| **Total** | **79** | **4** | **83** |
+
+**Key decisions:**
+- Buffer distance: 100m (not 500m)
+- SUTD boundary: MultiPolygon (main campus + Parcel D as separate polygons)
+- Analysis period: Aug 2024 – Jul 2025 (12 months)
+- Output CSVs written to repo `data/` directory; source data read from shared `C:/0_Files/NUS/Course/R_Projects/Assignment_3/Data/`
+
+**Output files (in repo `data/`):**
+- `station_mapping.csv` — 83 stations with pt_code, pt_type, university, lat/lon
+- `sg_bus_stops_all.csv` — all 5,166 Singapore bus stops
+- `sg_mrt_stations_all.csv` — all ~130 MRT stations
+
+**Pending (to run manually in RStudio):**
+- OD extraction chunks in `part1_identify_stations.Rmd` (eval=FALSE) → produces `data/od_subset/` (24 files) and `data/node_subset/` (24 files)
 
 **Checkpoint:** Map showing 4 campuses with buffers + identified stations. Station count table per university.
-
-**Key files:**
-- `scripts/part1_identify_stations.Rmd` — update for 4 universities
-- `utils/download_geospatial_data.py` — campus boundary downloader
-- `data/station_mapping.csv` — output
-- `data/od_subset/` — filtered OD data
-- `data/node_subset/` — filtered node data
 
 **Dependencies:** None (unblocks Parts 2, 3, 4)
 

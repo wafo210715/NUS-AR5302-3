@@ -1,5 +1,5 @@
 ---
-title: "Part 1: Identify NUS and NTU Bus Stops"
+title: "Part 1: Identify Stations Near 4 University Campuses"
 output: html_document
 ---
 
@@ -14,10 +14,14 @@ theme_set(theme_minimal(base_size = 12))
 project_colors <- c(
   nus_blue    = "#003D7C",
   ntu_orange  = "#E85D04",
+  smu_teal    = "#0A9396",
+  sutd_purple = "#7B2D8E",
   bus_red     = "#D62828",
   mrt_green   = "#2D6A4F",
   buffer_blue = "#A2D2FF",
-  buffer_yel  = "#FFBA08"
+  buffer_yel  = "#FFBA08",
+  buffer_teal = "#94D2BD",
+  buffer_purp = "#D4A5FF"
 )
 
 map_theme <- theme_minimal(base_size = 12) +
@@ -27,22 +31,25 @@ map_theme <- theme_minimal(base_size = 12) +
     plot.caption = element_text(color = "gray50", size = 9)
   )
 
-PROJ <- normalizePath("..")
-od_data_dir    <- file.path(PROJ, "data/OD_Data")
-figures_dir    <- file.path(PROJ, "figures")
-output_dir     <- file.path(PROJ, "data")
+# Use shared Data directory for reading, repo data/ for writing outputs
+data_dir <- "C:/0_Files/NUS/Course/R_Projects/Assignment_3/Data"
+od_data_dir    <- file.path(data_dir, "OD_Data")
+figures_dir    <- file.path(normalizePath(".."), "figures")
+output_dir     <- file.path(normalizePath(".."), "data")
 
-dir.create(figures_dir, showWarnings = FALSE)
-dir.create(output_dir, showWarnings = FALSE)
+dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 ```
 
 ```{r load-campus-boundaries, message=FALSE}
-nus_poly <- st_read(file.path(output_dir, "nus_boundary.geojson"), quiet = TRUE)
-ntu_poly <- st_read(file.path(output_dir, "ntu_boundary.geojson"), quiet = TRUE)
+nus_poly  <- st_read(file.path(data_dir, "nus_boundary.geojson"), quiet = TRUE)
+ntu_poly  <- st_read(file.path(data_dir, "ntu_boundary.geojson"), quiet = TRUE)
+smu_poly  <- st_read(file.path(data_dir, "smu_boundary.geojson"), quiet = TRUE)
+sutd_poly <- st_read(file.path(data_dir, "sutd_boundary.geojson"), quiet = TRUE)
 ```
 
 ```{r load-bus-stops, message=FALSE}
-bus_stops_raw <- st_read(file.path(output_dir, "LTABusStop.geojson"), quiet = TRUE)
+bus_stops_raw <- st_read(file.path(data_dir, "LTABusStop.geojson"), quiet = TRUE)
 
 bus_stops <- bus_stops_raw %>%
   rename(bus_stop_code = BUS_STOP_NUM, bus_roof_num = BUS_ROOF_NUM) %>%
@@ -76,7 +83,7 @@ message("Saved sg_bus_stops_all.csv: ", nrow(bus_all_df), " bus stops")
 # We need to collapse these into one representative point per station.
 
 mrt_exits_raw <- st_read(
-  file.path(output_dir, "LTAMRTStationExitGEOJSON.geojson"),
+  file.path(data_dir, "LTAMRTStationExitGEOJSON.geojson"),
   quiet = TRUE
 )
 
@@ -121,7 +128,7 @@ mrt_stations <- mrt_stations %>%
 # --- Map station names to OD data codes (e.g. "KENT RIDGE" → "CC24") ---
 # Read the lookup table built from LTA/Wikipedia data.
 # Each row maps one station code to its English name and MRT line.
-code_lookup <- read.csv(file.path(output_dir, "mrt_station_codes.csv"),
+code_lookup <- read.csv(file.path(data_dir, "mrt_station_codes.csv"),
                         stringsAsFactors = FALSE)
 
 # Build a reverse lookup: station_name → stn_code.
@@ -168,106 +175,103 @@ message("Saved sg_mrt_stations_all.csv: ", nrow(mrt_all_df), " MRT stations")
 ```{r buffer-and-intersect, message=FALSE}
 nus_poly_3414     <- st_transform(nus_poly, 3414)
 ntu_poly_3414     <- st_transform(ntu_poly, 3414)
+smu_poly_3414     <- st_transform(smu_poly, 3414)
+sutd_poly_3414    <- st_transform(sutd_poly, 3414)
 bus_stops_3414    <- st_transform(bus_stops, 3414)
 mrt_stations_3414 <- st_transform(mrt_stations, 3414)
 
-nus_buffer <- st_buffer(nus_poly_3414, dist = 500)
-ntu_buffer <- st_buffer(ntu_poly_3414, dist = 500)
+nus_buffer  <- st_buffer(nus_poly_3414, dist = 100)
+ntu_buffer  <- st_buffer(ntu_poly_3414, dist = 100)
+smu_buffer  <- st_buffer(smu_poly_3414, dist = 100)
+sutd_buffer <- st_buffer(sutd_poly_3414, dist = 100)
 
-nus_bus <- bus_stops_3414[nus_buffer, ]
-ntu_bus <- bus_stops_3414[ntu_buffer, ]
-nus_mrt <- mrt_stations_3414[nus_buffer, ]
-ntu_mrt <- mrt_stations_3414[ntu_buffer, ]
+nus_bus  <- bus_stops_3414[nus_buffer, ]
+ntu_bus  <- bus_stops_3414[ntu_buffer, ]
+smu_bus  <- bus_stops_3414[smu_buffer, ]
+sutd_bus <- bus_stops_3414[sutd_buffer, ]
 
-message("NUS: ", nrow(nus_bus), " bus stops, ", nrow(nus_mrt), " MRT stations")
-message("NTU: ", nrow(ntu_bus), " bus stops, ", nrow(ntu_mrt), " MRT stations")
+nus_mrt  <- mrt_stations_3414[nus_buffer, ]
+ntu_mrt  <- mrt_stations_3414[ntu_buffer, ]
+smu_mrt  <- mrt_stations_3414[smu_buffer, ]
+sutd_mrt <- mrt_stations_3414[sutd_buffer, ]
+
+message("NUS:  ", nrow(nus_bus), " bus stops, ", nrow(nus_mrt), " MRT stations")
+message("NTU:  ", nrow(ntu_bus), " bus stops, ", nrow(ntu_mrt), " MRT stations")
+message("SMU:  ", nrow(smu_bus), " bus stops, ", nrow(smu_mrt), " MRT stations")
+message("SUTD: ", nrow(sutd_bus), " bus stops, ", nrow(sutd_mrt), " MRT stations")
 ```
 
 ```{r build-station-list, message=FALSE}
-nus_bus_wgs84 <- st_transform(nus_bus, 4326)
-nus_bus_df <- data.frame(
-  station_name = paste("Bus Stop", nus_bus_wgs84$bus_stop_code),
-  pt_code    = sapply(nus_bus_wgs84$bus_stop_code, format_bus_code),
-  pt_type    = "BUS",
-  university = "NUS",
-  latitude   = st_coordinates(nus_bus_wgs84)[, 2],
-  longitude  = st_coordinates(nus_bus_wgs84)[, 1],
-  source     = "buffer_500m",
-  stringsAsFactors = FALSE
-)
-
-nus_mrt_wgs84 <- st_transform(nus_mrt, 4326)
-if (nrow(nus_mrt) > 0) {
-  nus_mrt_df <- data.frame(
-    station_name = nus_mrt_wgs84$station_name_clean,
-    pt_code    = nus_mrt_wgs84$station_code,
-    pt_type    = "TRAIN",
-    university = "NUS",
-    latitude   = st_coordinates(nus_mrt_wgs84)[, 2],
-    longitude  = st_coordinates(nus_mrt_wgs84)[, 1],
+# Helper: build a university's station data frame from bus and MRT results
+build_uni_df <- function(bus_sf, mrt_sf, uni_name) {
+  bus_wgs84 <- st_transform(bus_sf, 4326)
+  bus_df <- data.frame(
+    station_name = paste("Bus Stop", bus_wgs84$bus_stop_code),
+    pt_code    = sapply(bus_wgs84$bus_stop_code, format_bus_code),
+    pt_type    = "BUS",
+    university = uni_name,
+    latitude   = st_coordinates(bus_wgs84)[, 2],
+    longitude  = st_coordinates(bus_wgs84)[, 1],
     source     = "buffer_500m",
     stringsAsFactors = FALSE
   )
-  nus_list <- rbind(nus_bus_df, nus_mrt_df)
-} else {
-  nus_list <- nus_bus_df
+
+  mrt_wgs84 <- st_transform(mrt_sf, 4326)
+  if (nrow(mrt_wgs84) > 0) {
+    mrt_df <- data.frame(
+      station_name = mrt_wgs84$station_name_clean,
+      pt_code    = mrt_wgs84$station_code,
+      pt_type    = "TRAIN",
+      university = uni_name,
+      latitude   = st_coordinates(mrt_wgs84)[, 2],
+      longitude  = st_coordinates(mrt_wgs84)[, 1],
+      source     = "buffer_500m",
+      stringsAsFactors = FALSE
+    )
+    return(rbind(bus_df, mrt_df))
+  } else {
+    return(bus_df)
+  }
 }
 
-ntu_bus_wgs84 <- st_transform(ntu_bus, 4326)
-ntu_bus_df <- data.frame(
-  station_name = paste("Bus Stop", ntu_bus_wgs84$bus_stop_code),
-  pt_code    = sapply(ntu_bus_wgs84$bus_stop_code, format_bus_code),
-  pt_type    = "BUS",
-  university = "NTU",
-  latitude   = st_coordinates(ntu_bus_wgs84)[, 2],
-  longitude  = st_coordinates(ntu_bus_wgs84)[, 1],
-  source     = "buffer_500m",
-  stringsAsFactors = FALSE
-)
+nus_list  <- build_uni_df(nus_bus, nus_mrt, "NUS")
+ntu_list  <- build_uni_df(ntu_bus, ntu_mrt, "NTU")
+smu_list  <- build_uni_df(smu_bus, smu_mrt, "SMU")
+sutd_list <- build_uni_df(sutd_bus, sutd_mrt, "SUTD")
 
-ntu_mrt_wgs84 <- st_transform(ntu_mrt, 4326)
-if (nrow(ntu_mrt) > 0) {
-  ntu_mrt_df <- data.frame(
-    station_name = ntu_mrt_wgs84$station_name_clean,
-    pt_code    = ntu_mrt_wgs84$station_code,
-    pt_type    = "TRAIN",
-    university = "NTU",
-    latitude   = st_coordinates(ntu_mrt_wgs84)[, 2],
-    longitude  = st_coordinates(ntu_mrt_wgs84)[, 1],
-    source     = "buffer_500m",
-    stringsAsFactors = FALSE
-  )
-  ntu_list <- rbind(ntu_bus_df, ntu_mrt_df)
-} else {
-  ntu_list <- ntu_bus_df
-}
-
-master_station_list <- rbind(nus_list, ntu_list)
+master_station_list <- rbind(nus_list, ntu_list, smu_list, sutd_list)
+message("Total stations identified: ", nrow(master_station_list))
 ```
 
 ```{r cross-reference-od, message=FALSE}
-# Read a small sample (first 100K rows) of one month's OD data.
-# We don't need all 6.8M bus rows — just enough to collect the set of
-# station codes that actually appear in the data.
+# Read the FULL Aug 2024 OD data to collect every station code.
+# A 100K-row sample misses codes that appear later in the file
+# (e.g. SMU downtown bus stops), leading to false negatives.
 
-bus_sample <- read.csv(
-  file.path(od_data_dir, "origin_destination_bus_202501.csv"),
-  nrows = 100000
+bus_aug <- read.csv(
+  file.path(od_data_dir, "origin_destination_bus_202408.csv")
 )
-train_sample <- read.csv(
-  file.path(od_data_dir, "origin_destination_train_202501.csv"),
-  nrows = 100000
+train_aug <- read.csv(
+  file.path(od_data_dir, "origin_destination_train_202408.csv")
 )
 
-# Collect every unique station code from the sample,
-# from both origin and destination columns, for both bus and train.
-# e.g. ORIGIN_PT_CODE = "04168", DESTINATION_PT_CODE = "CC24"
+# Collect every unique station code from both origin and destination.
+# Bus codes need zero-padding: CSV reads "04168" as integer 4168.
+pad_bus_code <- function(code) {
+  code <- as.character(code)
+  num <- suppressWarnings(as.numeric(code))
+  if (!is.na(num)) return(sprintf("%05d", num))
+  return(code)
+}
+
 all_codes_in_data <- unique(c(
-  as.character(bus_sample$ORIGIN_PT_CODE),
-  as.character(bus_sample$DESTINATION_PT_CODE),
-  as.character(train_sample$ORIGIN_PT_CODE),
-  as.character(train_sample$DESTINATION_PT_CODE)
+  sapply(bus_aug$ORIGIN_PT_CODE, pad_bus_code),
+  sapply(bus_aug$DESTINATION_PT_CODE, pad_bus_code),
+  as.character(train_aug$ORIGIN_PT_CODE),
+  as.character(train_aug$DESTINATION_PT_CODE)
 ))
+
+rm(bus_aug, train_aug)  # free memory
 
 # For each station, check whether its code exists in the OD data.
 # NA %in% vector returns NA, which filter() would incorrectly keep,
@@ -286,13 +290,15 @@ if (nrow(missing) > 0) {
   message("WARNING: ", nrow(missing), " codes not found in OD data:")
   print(missing[, c("station_name", "pt_code", "pt_type")])
 } else {
-  message("All identified codes exist in OD data sample.")
+  message("All identified codes exist in OD data.")
 }
 ```
 
 ```{r visualize-nus, message=FALSE, warning=FALSE, fig.width=10, fig.height=8}
 nus_buffer_wgs84 <- st_transform(nus_buffer, 4326)
 nus_poly_wgs84   <- st_transform(nus_poly, 4326)
+nus_bus_wgs84    <- st_transform(nus_bus, 4326)
+nus_mrt_wgs84    <- st_transform(nus_mrt, 4326)
 
 ggplot() +
   geom_sf(data = nus_buffer_wgs84,
@@ -325,6 +331,8 @@ ggplot() +
 ```{r visualize-ntu, message=FALSE, warning=FALSE, fig.width=10, fig.height=8}
 ntu_buffer_wgs84 <- st_transform(ntu_buffer, 4326)
 ntu_poly_wgs84   <- st_transform(ntu_poly, 4326)
+ntu_bus_wgs84    <- st_transform(ntu_bus, 4326)
+ntu_mrt_wgs84    <- st_transform(ntu_mrt, 4326)
 
 ggplot() +
   geom_sf(data = ntu_buffer_wgs84,
@@ -346,9 +354,123 @@ ggplot() +
                size = 3, fontface = "bold", check_overlap = TRUE) +
   labs(
     title = "NTU Campus: Bus Stops and MRT Stations (500m Buffer)",
-    subtitle = paste0(ntu_bus_wgs84 %>% nrow(), " bus stops, ",
-                      ntu_mrt_wgs84 %>% nrow(), " MRT stations"),
+    subtitle = paste0(nrow(ntu_bus_wgs84), " bus stops, ",
+                      nrow(ntu_mrt_wgs84), " MRT stations"),
     caption = "Data: OpenStreetMap (campus boundary), LTA DataMall (bus stops, MRT stations)"
+  ) +
+  map_theme +
+  coord_sf()
+```
+
+```{r visualize-smu, message=FALSE, warning=FALSE, fig.width=10, fig.height=8}
+smu_buffer_wgs84 <- st_transform(smu_buffer, 4326)
+smu_poly_wgs84   <- st_transform(smu_poly, 4326)
+smu_bus_wgs84    <- st_transform(smu_bus, 4326)
+smu_mrt_wgs84    <- st_transform(smu_mrt, 4326)
+
+ggplot() +
+  geom_sf(data = smu_buffer_wgs84,
+          fill = project_colors["buffer_teal"], alpha = 0.3,
+          color = project_colors["smu_teal"], linewidth = 0.5) +
+  geom_sf(data = smu_poly_wgs84,
+          fill = NA, color = project_colors["smu_teal"], linewidth = 1) +
+  geom_sf(data = smu_bus_wgs84,
+          color = project_colors["bus_red"], size = 2, shape = 16) +
+  geom_sf(data = smu_mrt_wgs84,
+          color = project_colors["mrt_green"], size = 4, shape = 17) +
+  geom_sf_text(data = smu_bus_wgs84,
+               aes(label = bus_stop_code),
+               nudge_x = 0.001, nudge_y = 0.001,
+               size = 2.5, check_overlap = TRUE) +
+  geom_sf_text(data = smu_mrt_wgs84,
+               aes(label = station_name_clean),
+               nudge_x = 0.002, nudge_y = 0.002,
+               size = 3, fontface = "bold", check_overlap = TRUE) +
+  labs(
+    title = "SMU Campus: Bus Stops and MRT Stations (500m Buffer)",
+    subtitle = paste0(nrow(smu_bus_wgs84), " bus stops, ",
+                      nrow(smu_mrt_wgs84), " MRT stations"),
+    caption = "Data: OpenStreetMap (campus boundary), LTA DataMall (bus stops, MRT stations)"
+  ) +
+  map_theme +
+  coord_sf()
+```
+
+```{r visualize-sutd, message=FALSE, warning=FALSE, fig.width=10, fig.height=8}
+sutd_buffer_wgs84 <- st_transform(sutd_buffer, 4326)
+sutd_poly_wgs84   <- st_transform(sutd_poly, 4326)
+sutd_bus_wgs84    <- st_transform(sutd_bus, 4326)
+sutd_mrt_wgs84    <- st_transform(sutd_mrt, 4326)
+
+ggplot() +
+  geom_sf(data = sutd_buffer_wgs84,
+          fill = project_colors["buffer_purp"], alpha = 0.3,
+          color = project_colors["sutd_purple"], linewidth = 0.5) +
+  geom_sf(data = sutd_poly_wgs84,
+          fill = NA, color = project_colors["sutd_purple"], linewidth = 1) +
+  geom_sf(data = sutd_bus_wgs84,
+          color = project_colors["bus_red"], size = 2, shape = 16) +
+  geom_sf(data = sutd_mrt_wgs84,
+          color = project_colors["mrt_green"], size = 4, shape = 17) +
+  geom_sf_text(data = sutd_bus_wgs84,
+               aes(label = bus_stop_code),
+               nudge_x = 0.001, nudge_y = 0.001,
+               size = 2.5, check_overlap = TRUE) +
+  geom_sf_text(data = sutd_mrt_wgs84,
+               aes(label = station_name_clean),
+               nudge_x = 0.002, nudge_y = 0.002,
+               size = 3, fontface = "bold", check_overlap = TRUE) +
+  labs(
+    title = "SUTD Campus: Bus Stops and MRT Stations (500m Buffer)",
+    subtitle = paste0(nrow(sutd_bus_wgs84), " bus stops, ",
+                      nrow(sutd_mrt_wgs84), " MRT stations"),
+    caption = "Data: OpenStreetMap (campus boundary), LTA DataMall (bus stops, MRT stations)"
+  ) +
+  map_theme +
+  coord_sf()
+```
+
+```{r visualize-overview, message=FALSE, warning=FALSE, fig.width=10, fig.height=10}
+# Combined overview map of all 4 campuses
+# Drop all properties first — each boundary has different columns
+all_buffers <- rbind(
+  nus_buffer_wgs84 %>% select(geometry) %>% mutate(university = "NUS"),
+  ntu_buffer_wgs84 %>% select(geometry) %>% mutate(university = "NTU"),
+  smu_buffer_wgs84 %>% select(geometry) %>% mutate(university = "SMU"),
+  sutd_buffer_wgs84 %>% select(geometry) %>% mutate(university = "SUTD")
+)
+
+all_polys <- rbind(
+  nus_poly_wgs84 %>% select(geometry) %>% mutate(university = "NUS"),
+  ntu_poly_wgs84 %>% select(geometry) %>% mutate(university = "NTU"),
+  smu_poly_wgs84 %>% select(geometry) %>% mutate(university = "SMU"),
+  sutd_poly_wgs84 %>% select(geometry) %>% mutate(university = "SUTD")
+)
+
+uni_colors <- c(
+  "NUS"  = project_colors["nus_blue"],
+  "NTU"  = project_colors["ntu_orange"],
+  "SMU"  = project_colors["smu_teal"],
+  "SUTD" = project_colors["sutd_purple"]
+)
+
+buffer_fills <- c(
+  "NUS"  = project_colors["buffer_blue"],
+  "NTU"  = project_colors["buffer_yel"],
+  "SMU"  = project_colors["buffer_teal"],
+  "SUTD" = project_colors["buffer_purp"]
+)
+
+ggplot() +
+  geom_sf(data = all_buffers,
+          aes(fill = university, color = university), alpha = 0.3, linewidth = 0.5) +
+  geom_sf(data = all_polys,
+          aes(color = university), fill = NA, linewidth = 1) +
+  scale_fill_manual(values = buffer_fills, name = "University") +
+  scale_color_manual(values = uni_colors, name = "University") +
+  labs(
+    title = "All 4 University Campuses: 500m Buffers",
+    caption = "Data: OpenStreetMap (campus boundaries)"
   ) +
   map_theme +
   coord_sf()
@@ -359,14 +481,16 @@ write.csv(master_station_list,
           file.path(output_dir, "station_mapping.csv"),
           row.names = FALSE)
 message("Saved station_mapping.csv")
-message("NUS: ", sum(master_station_list$university == "NUS"), " stations")
-message("NTU: ", sum(master_station_list$university == "NTU"), " stations")
+message("NUS:  ", sum(master_station_list$university == "NUS"), " stations")
+message("NTU:  ", sum(master_station_list$university == "NTU"), " stations")
+message("SMU:  ", sum(master_station_list$university == "SMU"), " stations")
+message("SUTD: ", sum(master_station_list$university == "SUTD"), " stations")
 ```
 
 # Data Extraction (run once in R console)
 
-These chunks extract campus-relevant rows from 74 months of OD and node data.
-Set `eval=FALSE` because this is a one-time batch operation (~18 GB input).
+These chunks extract campus-relevant rows from 12 months of OD and node data
+(Aug 2024 – Jul 2025). Set `eval=FALSE` because this is a one-time batch operation.
 Run each chunk manually in RStudio or R console.
 
 ```{r extract-setup, eval=FALSE}
@@ -422,6 +546,10 @@ od_bus_files <- sort(list.files(
   od_data_dir, pattern = "^origin_destination_bus_.*\\.csv$", full.names = TRUE
 ))
 
+# Filter to Aug 2024 – Jul 2025 only
+od_bus_files <- od_bus_files[str_extract(basename(od_bus_files), "\\d{6}") >= "202408" &
+                                str_extract(basename(od_bus_files), "\\d{6}") <= "202507"]
+
 message("Processing ", length(od_bus_files), " OD bus files ...")
 
 total_rows <- 0L
@@ -457,6 +585,10 @@ message("Done. ", total_rows, " total rows extracted in ", round(as.numeric(elap
 od_train_files <- sort(list.files(
   od_data_dir, pattern = "^origin_destination_train_.*\\.csv$", full.names = TRUE
 ))
+
+# Filter to Aug 2024 – Jul 2025 only
+od_train_files <- od_train_files[str_extract(basename(od_train_files), "\\d{6}") >= "202408" &
+                                  str_extract(basename(od_train_files), "\\d{6}") <= "202507"]
 
 message("Processing ", length(od_train_files), " OD train files ...")
 
@@ -494,6 +626,10 @@ node_bus_files <- sort(list.files(
   od_data_dir, pattern = "^transport_node_bus_.*\\.csv$", full.names = TRUE
 ))
 
+# Filter to Aug 2024 – Jul 2025 only
+node_bus_files <- node_bus_files[str_extract(basename(node_bus_files), "\\d{6}") >= "202408" &
+                                  str_extract(basename(node_bus_files), "\\d{6}") <= "202507"]
+
 message("Processing ", length(node_bus_files), " node bus files ...")
 
 total_rows <- 0L
@@ -524,6 +660,10 @@ message("Done. ", total_rows, " total rows extracted in ", round(as.numeric(elap
 node_train_files <- sort(list.files(
   od_data_dir, pattern = "^transport_node_train_.*\\.csv$", full.names = TRUE
 ))
+
+# Filter to Aug 2024 – Jul 2025 only
+node_train_files <- node_train_files[str_extract(basename(node_train_files), "\\d{6}") >= "202408" &
+                                    str_extract(basename(node_train_files), "\\d{6}") <= "202507"]
 
 message("Processing ", length(node_train_files), " node train files ...")
 
@@ -556,6 +696,7 @@ message("Done. ", total_rows, " total rows extracted in ", round(as.numeric(elap
 # Checks: row counts per month, missing months, station coverage, anomalies.
 
 library(tidyr)
+library(readr)
 
 build_quality_df <- function(subset_dir, pattern, code_col, campus_codes, is_train = FALSE) {
   files <- sort(list.files(subset_dir, pattern = pattern, full.names = TRUE))
@@ -590,25 +731,30 @@ build_quality_df <- function(subset_dir, pattern, code_col, campus_codes, is_tra
       )
     }
 
+    stations_missing <- setdiff(campus_codes, stations_found)
+
     tibble(
       file            = basename(f),
       year_month      = str_extract(basename(f), "\\d{6}"),
       total_rows      = nrow(df),
       total_trips     = if ("TOTAL_TRIPS" %in% names(df)) sum(df$TOTAL_TRIPS, na.rm = TRUE) else NA_real_,
       stations_found  = length(stations_found),
-      stations_missing = length(campus_codes) - length(stations_found)
+      stations_missing = length(stations_missing)
     )
   })
 
   bind_rows(rows)
 }
 
-# Expected month range: Jan 2020 – Feb 2026
+# Expected month range: Aug 2024 – Jul 2025 (12 months)
 all_months <- seq(
-  from = as.Date("2020-01-01"),
-  to   = as.Date("2026-02-01"),
+  from = as.Date("2024-08-01"),
+  to   = as.Date("2025-07-01"),
   by   = "month"
 ) %>% format("%Y%m")
+
+message("Campus bus codes: ", length(campus_bus_codes))
+message("Campus train codes: ", length(campus_train_codes))
 
 message("=== OD Bus Subset ===")
 od_bus_qc <- build_quality_df(
@@ -650,7 +796,7 @@ for (label in c("OD Bus", "OD Train", "Node Bus", "Node Train")) {
   if (length(missing) > 0) {
     message("WARNING [", label, "]: missing months: ", paste(missing, collapse = ", "))
   } else {
-    message("[", label, "]: all 74 months present.")
+    message("[", label, "]: all 12 months present.")
   }
 }
 
@@ -686,4 +832,47 @@ quality_report <- bind_rows(
 
 write_csv(quality_report, file.path(output_dir, "data_quality_report.csv"))
 message("\nSaved data_quality_report.csv")
+
+# --- Update station_mapping.csv with corrected in_od_data ---
+# Use the subset data (which covers all 12 months) to determine
+# which stations actually appear in OD data, then re-save.
+od_all_bus_codes <- unique(c(
+  unlist(lapply(list.files(od_subset_dir, "^origin_destination_bus_.*\\.csv$", full.names = TRUE),
+                function(f) {
+                  d <- read_csv(f, show_col_types = FALSE, progress = FALSE)
+                  c(sapply(d$ORIGIN_PT_CODE, pad_bus_code),
+                    sapply(d$DESTINATION_PT_CODE, pad_bus_code))
+                }))
+))
+od_all_train_codes <- unique(c(
+  unlist(lapply(list.files(od_subset_dir, "^origin_destination_train_.*\\.csv$", full.names = TRUE),
+                function(f) {
+                  d <- read_csv(f, show_col_types = FALSE, progress = FALSE)
+                  c(as.character(d$ORIGIN_PT_CODE),
+                    as.character(d$DESTINATION_PT_CODE))
+                }))
+))
+
+station_map$in_od_data <- ifelse(
+  station_map$pt_type == "BUS",
+  station_map$pt_code %in% od_all_bus_codes,
+  station_map$pt_code %in% od_all_train_codes
+)
+
+write.csv(station_map,
+          file.path(output_dir, "station_mapping.csv"),
+          row.names = FALSE)
+message("Updated station_mapping.csv with corrected in_od_data")
+
+# Report updated coverage
+message("Bus stations in OD data: ", sum(station_map$in_od_data[station_map$pt_type == "BUS"], na.rm = TRUE),
+        " / ", sum(station_map$pt_type == "BUS"))
+message("Train stations in OD data: ", sum(station_map$in_od_data[station_map$pt_type == "TRAIN"], na.rm = TRUE),
+        " / ", sum(station_map$pt_type == "TRAIN"))
+
+not_in_od <- station_map %>% filter(!in_od_data)
+if (nrow(not_in_od) > 0) {
+  message("Stations NOT in OD data:")
+  print(not_in_od[, c("station_name", "pt_code", "university")])
+}
 ```

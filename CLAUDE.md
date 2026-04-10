@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Project: Beyond the Campus
 
 ## Research Question
@@ -5,16 +9,17 @@ How do travel patterns differ across university communities, and what characteri
 
 ## Scope (v2)
 - **4 universities**: NUS (Kent Ridge), NTU, SMU (Bras Basah), SUTD (Tampines)
-- **Time period**: Aug 2024 – Aug 2025 (one school year, AY2024-25)
+- **Time period**: Aug 2024 – Jul 2025 (one school year, AY2024-25)
 - **POI data**: Overture Maps Foundation (via Source Cooperative historical archive)
-- **OD data**: Singapore LTA Origin-Destination data (74 months available, focus on 13 months)
+- **OD data**: Singapore LTA Origin-Destination data (74 months available, focus on 12 months)
 
 ## Data Sources
 - **Overture Maps POI**: Downloaded from Source Cooperative (`source.coop/fused/overture`), GeoParquet format. 12 monthly snapshots available for Aug 2024 – Dec 2025.
 - **LTA OD data**: 74 months (Jan 2020 – Feb 2026), shared via Google Drive. NOT in repo.
-- **LTA bus stop coordinates**: `data/LTABusStop.geojson` (5,166 stops)
-- **LTA MRT station exits**: `data/LTAMRTStationExitGEOJSON.geojson` (597 exits)
-- **Campus boundaries**: `data/nus_boundary.geojson`, `data/ntu_boundary.geojson` (SMU/SUTD TBD)
+- **LTA bus stop coordinates**: `data/LTABusStop.geojson` (5,166 stops) — in shared folder
+- **LTA MRT station exits**: `data/LTAMRTStationExitGEOJSON.geojson` (597 exits) — in shared folder
+- **Campus boundaries**: `smu_boundary.geojson`, `sutd_boundary.geojson` — in shared folder
+- **Shared data location**: `C:/0_Files/NUS/Course/R_Projects/Assignment_3/Data/` (read-only, NOT in repo)
 - Each member must obtain data independently; never commit data files
 
 ## Python Setup
@@ -50,7 +55,7 @@ figures/                      # Auto-generated (gitignored)
 ```
 
 ## Pipeline Overview
-1. **Part 1**: Station mapping — identify bus/MRT stations near 4 campuses (500m buffer), extract OD subsets
+1. **Part 1 (DONE)**: Station mapping — 83 stations near 4 campuses (100m buffer). See `docs/part1_handoff.md`.
 2. **Part 2**: Urban function identification — Overture POI → LDA topic modeling → station classification
 3. **Part 3**: Temporal patterns — monthly OD analysis, semester/vacation comparison, intra-day patterns
 4. **Part 4**: Comparative analysis — inter-university comparison of travel patterns and destination functions
@@ -98,14 +103,19 @@ Each pipeline step should produce a visible output figure:
 - NEVER commit files larger than 10MB
 - NEVER force push
 - Use descriptive commit messages: "Part 1: add SMU/SUTD station mapping"
-- Work on `YK` branch
+- Work on feature branches (e.g. `szh`)
 - If stuck on a merge conflict, ask the group chat immediately
 
 ## Project Documentation
+- `docs/part1_handoff.md` — Part 1 output details and handoff for downstream parts
 - `docs/todo.md` — task tracking and pending items
 - `docs/workload_plan.md` — pipeline division and timeline
 - `docs/info.md` — data lineage, naming conventions, file flow
 - `docs/paper_synthesis.md` — literature review and methodology notes
+
+## Key Data Path Convention
+- **Read** source data from shared folder: `C:/0_Files/NUS/Course/R_Projects/Assignment_3/Data/`
+- **Write** output CSVs to repo `data/` directory (gitignored, but local to each member's clone)
 
 ## Coordination
 - Ask questions in the group chat before making assumptions
