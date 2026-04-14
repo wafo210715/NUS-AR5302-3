@@ -14,7 +14,7 @@ import numpy as np
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = BASE_DIR / "data" / "overture_pois"
 FIGURES_DIR = BASE_DIR / "figures"
 
 # Style
@@ -32,8 +32,12 @@ def load_scores():
     with open(DATA_DIR / "coherence_scores_gensim.json") as f:
         gensim_data = json.load(f)
 
-    with open(DATA_DIR / "coherence_scores.json") as f:
-        approx_data = json.load(f)
+    # Optional: approximate coherence scores (may not exist)
+    approx_path = DATA_DIR / "coherence_scores.json"
+    approx_data = {}
+    if approx_path.exists():
+        with open(approx_path) as f:
+            approx_data = json.load(f)
 
     ks = []
     cv = []
@@ -54,7 +58,8 @@ def load_scores():
 
 def plot_k_selection(ks, cv, umass, perplexity_proxy):
     """Create K selection visualization."""
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    n_panels = 3 if perplexity_proxy else 2
+    fig, axes = plt.subplots(1, n_panels, figsize=(5 * n_panels, 5))
 
     best_k = ks[np.argmax(cv)]
     best_cv = max(cv)
@@ -109,36 +114,30 @@ def plot_k_selection(ks, cv, umass, perplexity_proxy):
     ax.legend(loc="lower right", fontsize=10)
     ax.grid(True, alpha=0.3)
 
-    # --- Panel 3: Perplexity Proxy ---
-    ax = axes[2]
-    best_k_perp = ks[np.argmin(perplexity_proxy)]
-    best_perp = min(perplexity_proxy)
+    # --- Panel 3: Perplexity Proxy (optional) ---
+    if perplexity_proxy:
+        ax = axes[2]
+        best_k_perp = ks[np.argmin(perplexity_proxy)]
+        best_perp = min(perplexity_proxy)
 
-    ax.plot(ks, perplexity_proxy, "D-", color="#E76F51", linewidth=2, markersize=8, zorder=3)
+        ax.plot(ks, perplexity_proxy, "D-", color="#E76F51", linewidth=2, markersize=8, zorder=3)
+        ax.scatter([best_k_perp], [best_perp], s=150, color="#E63946", zorder=5, edgecolors="black", linewidths=1.5)
 
-    # Mark elbow (not necessarily lowest)
-    ax.scatter([best_k_perp], [best_perp], s=150, color="#E63946", zorder=5, edgecolors="black", linewidths=1.5)
+        for k, v in zip(ks, perplexity_proxy):
+            ax.annotate(f"{v:.1f}", (k, v), textcoords="offset points",
+                        xytext=(0, 12), ha="center", fontsize=9,
+                        fontweight="bold" if k == best_k_perp else "normal",
+                        color="#E63946" if k == best_k_perp else "#333333")
 
-    for k, v in zip(ks, perplexity_proxy):
-        ax.annotate(f"{v:.1f}", (k, v), textcoords="offset points",
-                    xytext=(0, 12), ha="center", fontsize=9,
-                    fontweight="bold" if k == best_k_perp else "normal",
-                    color="#E63946" if k == best_k_perp else "#333333")
-
-    ax.set_xlabel("Number of Topics (K)")
-    ax.set_ylabel("Perplexity (proxy)")
-    ax.set_title("(c) Perplexity\nLower = better model fit")
-    ax.set_xticks(ks)
-    ax.grid(True, alpha=0.3)
-    ax.annotate("No clear elbow\nkeeps decreasing",
-                 xy=(ks[-1], perplexity_proxy[-1]),
-                 xytext=(ks[-1] - 1.5, perplexity_proxy[0] * 0.95),
-                 fontsize=9, fontstyle="italic", color="#666666",
-                 arrowprops=dict(arrowstyle="->", color="#999999"))
+        ax.set_xlabel("Number of Topics (K)")
+        ax.set_ylabel("Perplexity (proxy)")
+        ax.set_title("(c) Perplexity\nLower = better model fit")
+        ax.set_xticks(ks)
+        ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
 
-    output = FIGURES_DIR / "part3_k_selection_metrics.png"
+    output = FIGURES_DIR / "part2_k_selection_metrics.png"
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
     plt.savefig(output, dpi=200, bbox_inches="tight")
     print(f"Saved: {output}")
@@ -150,7 +149,10 @@ def plot_k_selection(ks, cv, umass, perplexity_proxy):
     print("=" * 55)
     print(f"\n  C_v Coherence:   Peak at K={best_k} ({best_cv:.4f})")
     print(f"  U_MASS Coherence: Peak at K={best_k_umass} ({best_umass:.4f})")
-    print(f"  Perplexity:       Lowest at K={best_k_perp} ({best_perp:.1f})")
+    if perplexity_proxy:
+        best_k_perp = ks[np.argmin(perplexity_proxy)]
+        best_perp = min(perplexity_proxy)
+        print(f"  Perplexity:       Lowest at K={best_k_perp} ({best_perp:.1f})")
     print(f"\n  Decision: K={best_k}")
     print(f"  Reason: C_v peak + domain interpretability")
     print(f"  Reference: Lin et al. (2025) used K=6 for London;")
@@ -203,7 +205,7 @@ def plot_cv_detail(ks, cv):
 
     plt.tight_layout()
 
-    output = FIGURES_DIR / "part3_cv_coherence_k_selection.png"
+    output = FIGURES_DIR / "part2_cv_coherence_k_selection.png"
     plt.savefig(output, dpi=200, bbox_inches="tight")
     print(f"Saved: {output}")
     plt.close()

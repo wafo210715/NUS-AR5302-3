@@ -21,7 +21,7 @@ from gensim.corpora import Dictionary
 
 # === Config ===
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = BASE_DIR / "data" / "overture_pois"
 BETA_DIR = DATA_DIR / "lda_beta"
 
 K_VALUES = [4, 5, 6, 7, 8]
