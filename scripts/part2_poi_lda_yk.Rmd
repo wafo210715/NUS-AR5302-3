@@ -197,7 +197,8 @@ message("Total stations (bus + MRT): ", nrow(all_stations))
 # Remove duplicates: stations at the same location with different types
 # Prefer TRAIN over BUS for deduplication (MRT stations are more meaningful)
 all_stations <- all_stations %>%
-  mutate(xy = round(st_coordinates(.)[, 1], 5)) %>%
+  mutate(xy = paste(round(st_coordinates(.)[, 1], 5),
+                    round(st_coordinates(.)[, 2], 5), sep = "_")) %>%
   group_by(xy) %>%
   arrange(desc(pt_type)) %>%
   slice(1) %>%
@@ -580,8 +581,10 @@ station_class <- station_class %>%
   left_join(station_poi_info, by = "station_code")
 
 # Add station coordinates (from the spatial data, in WGS84 for output)
+# Use distinct() to prevent many-to-many join in case of duplicate station_codes
 station_coords <- all_stations %>%
   filter(station_code %in% station_class$station_code) %>%
+  distinct(station_code, .keep_all = TRUE) %>%
   mutate(
     longitude = st_coordinates(.)[, 1],
     latitude  = st_coordinates(.)[, 2]
