@@ -304,3 +304,132 @@ Rscript utils/export_lda_beta.R
 3. **可复现性：** LDA 使用 `seed = 42`，但 R 的 `topicmodels` 包在不同平台/版本上可能因浮点差异产生微小差异。如果需要精确复现，应使用保存的 `.rds` 模型文件而非重新训练。
 
 4. **`calculate_topic_coherence_gensim.py` 已弃用：** 由于 gensim 在 Python 3.14 上无法编译，该脚本已被 `calculate_topic_coherence.py`（纯 Python 实现）替代。后者产生的 JSON 格式完全兼容，可直接被 `visualize_k_selection.py` 读取。
+
+---
+
+## 九、已知 Bug：station_poi_counts.csv 和 station_topic_classification.csv 缺失站点
+
+**发现日期：** 2026-04-16
+**发现者：** Part 4 队友 + YK 复核
+**状态：** 待修复
+
+### 问题概述
+
+队友在 Part 4 使用 Part 2 的产出文件时，发现 `station_poi_counts.csv` 和 `station_topic_classification.csv` 缺失大量本应保留的站点。经独立验证（从 `poi_station_assignment.csv` 重新推算），有效站点数应为 **3,855** 个，但实际产出文件中站点数远少于此。
+
+### 数据审计结果
+
+| 文件 | 位置 | 行数 | 唯一站点数 | 数据源 | 备注 |
+|------|------|------|-----------|--------|------|
+| `poi_station_assignment.csv` | `data/overture_pois/` | 135,879 | 4,537（非 NA） | Overture | 最完整的上游表 |
+| `station_poi_counts.csv` | `data/overture_pois/` | 3,175 | 3,175 | Overture | 缺 680 站点 |
+| `station_topic_classification.csv` | `data/overture_pois/` | 3,194 | 3,175 | Overture | 缺 680 站点 + 19 行重复 |
+| `station_poi_counts.csv` | `data/` 根目录 | 2,679 | — | **旧 OSM** | 错误文件！不应使用 |
+| `station_topic_classification.csv` | `data/` 根目录 | 2,695 | — | **旧 OSM** | 错误文件！不应使用 |
+
+### 已确认的 Bug 列表
+
+#### Bug 1（严重）：站点去重逻辑只用了 X 坐标（经度）
+
+**位置：** `scripts/part2_poi_lda_yk.Rmd` 第 200 行
+
+```r
+# 当前代码（有 Bug）
+all_stations <- all_stations %>%
+  mutate(xy = round(st_coordinates(.)[, 1], 5)) %>%   # ← 只取了 X（经度）！
+  group_by(xy) %>%
+  arrange(desc(pt_type)) %>%
+  slice(1) %>%
+  ungroup() %>%
+  select(-xy)
+```
+
+**问题：** `st_coordinates(.)[, 1]` 只返回经度（X），没有包含纬度（Y）。变量名虽然叫 `xy`，但实际只有 `x`。
+
+**后果：** 所有经度相同（精确到 5 位小数 ≈ ~1.1 米）但纬度不同的站点会被错误地当作"同一位置"而合并。在新加坡，沿南北走向道路分布的公交站经常共享相同的经度但纬度相差数百米，因此会被大量错误合并。这导致：
+- `all_stations` 站点数被过度缩减
+- 被错误合并的站点失去独立的 500m buffer
+- 下游 POI 分配、DTM 构建、LDA 训练、站点分类全部受影响
+
+**修复方案：** 同时使用 X 和 Y 坐标创建唯一键：
+
+```r
+# 修复后的代码
+all_stations <- all_stations %>%
+  mutate(xy = paste(round(st_coordinates(.)[, 1], 5),
+                    round(st_coordinates(.)[, 2], 5), sep = "_")) %>%
+  group_by(xy) %>%
+  arrange(desc(pt_type)) %>%
+  slice(1) %>%
+  ungroup() %>%
+  select(-xy)
+```
+
+#### Bug 2（中等）：classification 输出存在多对多 join 产生的重复行
+
+**位置：** `scripts/part2_poi_lda_yk.Rmd` 第 582-593 行
+
+```r
+station_coords <- all_stations %>%
+  filter(station_code %in% station_class$station_code) %>%
+  ...
+station_class <- station_class %>%
+  left_join(station_coords, by = "station_code")
+```
+
+**问题：** `all_stations` 中同一 `station_code` 可能对应多行（例如 MRT 同一站点的多个出口有不同坐标）。`left_join` 时产生一对多展开，导致 `station_topic_classification.csv` 出现 19 行重复（3,194 行 vs 3,175 唯一站点）。
+
+**后果：**
+- Part 4 使用时可能产生重复计数
+- 同一站点出现在多行中可能误导下游分析
+
+**修复方案：** join 前对 `all_stations` 去重，或使用 `station_class` 的 `station_code` 做 anti-join 验证。
+
+#### Bug 3（中等）：`data/` 根目录存在旧版 OSM 产出文件
+
+**涉及文件：**
+- `data/station_poi_counts.csv`（2,679 行，OSM 风格列名如 `amenity=xxx`）
+- `data/station_topic_classification.csv`（2,695 行，旧标签如 "Neighborhood Recreation"）
+
+**问题：** 这两个文件是旧 OSM pipeline 的残留物，不是当前 Overture pipeline 的产出。它们位于 `data/` 根目录而非 `data/overture_pois/`，容易导致队友误用。
+
+**后果：**
+- 队友使用旧文件会得到完全不同的分类结果
+- 列名、标签、站点编码均与当前 pipeline 不兼容
+
+**修复方案：** 删除 `data/` 根目录下的这两个旧文件。
+
+### 缺失站点分析
+
+从 `poi_station_assignment.csv` 重新推算，经过 vocabulary filtering（783 个有效类别）和 >= 3 POI 站点过滤后，应保留 **3,855** 个站点。但 `overture_pois/station_poi_counts.csv` 只有 **3,175** 个，缺失 **680** 个。
+
+部分被错误遗漏的高 POI 覆盖站点：
+
+| 站点编码 | 应保留 POI 数 |
+|----------|--------------|
+| 52008 | 484 |
+| 42311 | 428 |
+| 47559 | 372 |
+| 22009 | 358 |
+| 14141 | 349 |
+| 80159 | 339 |
+| 02149 | 311 |
+| 47751 | 311 |
+
+### 修复影响评估
+
+修复 Bug 1（去重逻辑）后，需要重新运行 **整个 Part 2 pipeline**（Step 3 ~ Step 9），因为去重是空间分配的上游步骤。修复后的预期变化：
+- `all_stations` 数量增加（更多独立站点保留）
+- `poi_station_assignment.csv` 变化（更多 POI 被正确分配）
+- DTM 维度变化（更多站点行）
+- LDA 模型需要重新训练（因为 DTM 变化）
+- `station_topic_classification.csv` 需要重新生成
+
+### 待办事项
+
+- [ ] 修复 Bug 1：去重逻辑改为 X+Y 双坐标
+- [ ] 修复 Bug 2：classification 输出去重
+- [ ] 清理 Bug 3：删除 `data/` 根目录的旧 OSM 文件
+- [ ] 重新运行 Part 2 pipeline
+- [ ] 重新验证站点数量
+- [ ] 通知 Part 4 队友更新数据源

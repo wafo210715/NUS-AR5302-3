@@ -1,0 +1,26 @@
+查清楚了。按 YK_v2 的逻辑，用当前 data/poi_station_assignment.csv 重新推算后：
+
+有效站点数应为 3855 个
+这里指的是：有非 NA station_code，且经过 vocabulary filtering 后仍有 >= 3 个 POI 的站点
+但当前 data/station_poi_counts.csv 里缺了 1143 个本应保留的站点
+当前 data/station_topic_classification.csv 也同样缺了 1143 个本应保留的站点
+也就是说，问题表格就是这两个：
+
+station_poi_counts.csv
+station_topic_classification.csv
+而且这两个表缺失的是同一批站点，说明根源不在 Part 4，而在 Part 2 的中间结果链条。
+相对来说，poi_station_assignment.csv 反而更像是当前这批数据里最完整、最可信的上游表。
+
+一些高频但被错误漏掉的站点包括：
+
+52008，应保留 POI 数 484
+42311，423
+47559，368
+22009，357
+14141，349
+这说明漏掉的不是边缘小站，而是连高 POI 覆盖站点都被丢了。
+
+对你现在的 NTU 问题，结论就是：
+
+22529 这种是上游就没分到 POI，属于真实无匹配
+22009、27211 这类则是“明明有 POI、按 YK_v2 逻辑应保留，但在 station_poi_counts.csv 和 station_topic_classification.csv 中被错误漏掉”
