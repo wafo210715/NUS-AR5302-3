@@ -256,10 +256,11 @@ if (sum(multi_hit) > 0) {
 # Build the assignment table
 assigned <- pois_in %>%
   mutate(station_code = station_codes) %>%
+  filter(!is.na(station_code), station_code != "") %>%
   select(station_code, category, confidence, name, id) %>%
   st_drop_geometry()
 
-message("POIs assigned to stationsmessage("POIs assigned to stations: ", nrow(assigned), " (",
+message("POIs assigned to stations: ", nrow(assigned), " (",
         round(nrow(assigned) / nrow(pois_3414) * 100, 1), "% of total)")
 message("Unique stations with POIs: ", assigned %>% pull(station_code) %>% n_distinct())
 
@@ -335,6 +336,10 @@ summary(station_poi_counts$n)
 # This is the input format required by the LDA algorithm.
 
 # Create station-term count table
+# Filter out any NA or empty station_codes (safety check)
+assigned_final <- assigned_final %>%
+  filter(!is.na(station_code), station_code != "")
+
 dtm_input <- assigned_final %>%
   count(station_code, category) %>%
   tidyr::complete(station_code, category, fill = list(n = 0)) %>%
