@@ -18,6 +18,7 @@ library(sf)
 library(terra)
 library(scales)
 library(knitr)
+library(patchwork)
 library(stringr)
 library(jsonlite)
 
@@ -100,8 +101,14 @@ od_campus <- map_dfr(od_files, ~ read_csv(.x, show_col_types = FALSE)) %>%
   inner_join(origin_lut, by = "ORIGIN_PT_CODE") %>%
   mutate(origin_university = factor(origin_university, levels = univ_levels))
 
+station_topic_path <- if (file.exists(file.path(data_dir, "station_topic_classification_harmonized.csv"))) {
+  file.path(data_dir, "station_topic_classification_harmonized.csv")
+} else {
+  file.path(data_dir, "station_topic_classification.csv")
+}
+
 station_topic <- read_csv(
-  file.path(data_dir, "station_topic_classification.csv"),
+  station_topic_path,
   show_col_types = FALSE,
   col_types = cols(station_code = col_character())
 ) %>%
@@ -195,6 +202,7 @@ distance_coverage <- od_enriched %>%
 
 message("OD files loaded: ", length(od_files))
 message("Campus OD trips: ", comma(sum(od_enriched$TOTAL_TRIPS)))
+message("Station topic file: ", basename(station_topic_path))
 message("Topic coverage: ", percent(topic_coverage$coverage_pct, accuracy = 0.1))
 message("Distance coverage: ", percent(distance_coverage$coverage_pct, accuracy = 0.1))
 ```
@@ -333,7 +341,7 @@ p_distance <- ggplot(
     trim = FALSE
   ) +
   geom_boxplot(
-    width = 0.18,
+    width = 0.12,
     fill = "#F8F8F5",
     colour = "#1A1A1A",
     linewidth = 0.65,
@@ -345,7 +353,7 @@ p_distance <- ggplot(
   facet_wrap(~ trip_mode, scales = "free") +
   labs(
     title = "Travel Distance Distribution by University and Mode",
-    subtitle = "Violin plots show sampled trip-weighted distributions; each panel is displayed within its main 99% distance range, and MRT excludes NTU because no MRT-origin trips are available",
+    subtitle = str_wrap("Travel distance distributions by mode for NUS, NTU, SMU, and SUTD.", width = 115),
     x = "University",
     y = "Distance (km)"
   ) +
@@ -379,25 +387,46 @@ top_bus_destinations <- od_enriched %>%
   mutate(destination_name = factor(destination_name, levels = rev(destination_name))) %>%
   ungroup()
 
-p_top_bus <- ggplot(
-  top_bus_destinations,
-  aes(x = destination_name, y = trips, fill = origin_university)
-) +
-  geom_col(width = 0.72) +
-  coord_flip() +
-  facet_wrap(~ origin_university, scales = "free_y", ncol = 2) +
-  scale_fill_manual(values = univ_colors) +
-  scale_y_continuous(labels = comma) +
-  labs(
-    title = "Top 20 Bus Destinations by University",
-    subtitle = "Destination codes with five digits are treated as bus stops",
-    x = "Destination bus stop",
-    y = "Trips"
+make_bus_panel <- function(univ_name) {
+  ggplot(
+    top_bus_destinations %>% filter(origin_university == univ_name),
+    aes(x = destination_name, y = trips, fill = origin_university)
   ) +
+    geom_col(width = 0.72) +
+    coord_flip() +
+    scale_fill_manual(values = univ_colors, drop = FALSE) +
+    scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.04))) +
+    labs(title = univ_name, x = NULL, y = NULL) +
+    theme_minimal(base_size = 12) +
+    theme(
+      legend.position = "none",
+      plot.title = element_text(face = "bold", hjust = 0.5, size = 12),
+      axis.text.y = element_text(size = 7.8),
+      axis.text.x = element_text(size = 9),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor = element_blank(),
+      plot.margin = margin(5.5, 8, 5.5, 5.5)
+    )
+}
+
+bus_axis_label <- ggplot() +
+  theme_void() +
+  annotate("text", x = 1, y = 0.5, label = "Trips", hjust = 1, vjust = 0.5, size = 3.8)
+
+left_bus_col <- make_bus_panel("NUS") / make_bus_panel("SMU") / bus_axis_label +
+  plot_layout(heights = c(1, 1, 0.08))
+
+right_bus_col <- make_bus_panel("NTU") / make_bus_panel("SUTD") / bus_axis_label +
+  plot_layout(heights = c(1, 1, 0.08))
+
+p_top_bus <- (left_bus_col | right_bus_col) +
+  plot_annotation(
+    title = "Top 20 Bus Destinations by University",
+    subtitle = "Destinations ranked by trip frequency for each university community."
+  ) &
   theme(
-    legend.position = "none",
-    strip.text = element_text(face = "bold"),
-    axis.text.y = element_text(size = 7.8)
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(colour = "grey30")
   )
 
 print(p_top_bus)
@@ -450,7 +479,7 @@ p_top_mrt <- ggplot(
   scale_x_discrete(labels = function(x) sub("___.*$", "", x)) +
   labs(
     title = "Top 20 MRT Destinations by University",
-    subtitle = "Analysis focuses on NUS, SMU, and SUTD because NTU has no MRT-origin trips in the current data",
+    subtitle = "Ranked by trip frequency across university communities (NTU has no MRT-origin trips).",
     x = "Destination MRT station",
     y = "Trips"
   ) +
@@ -542,7 +571,7 @@ p_catchment <- ggplot(
   facet_wrap(~ trip_mode, scales = "free_x") +
   labs(
     title = "Trip Shares by Distance Ring and Mode",
-    subtitle = "BUS and MRT trips are shown separately",
+    subtitle = "Spatial reach of trips across distance bands by university.",
     x = NULL,
     y = "Share of Trips",
     fill = "Distance ring"
@@ -860,12 +889,19 @@ campus_label_xy <- campus_points_sf %>%
   ) %>%
   st_drop_geometry()
 
+density_map_colors <- c(
+  NUS  = "#8ECDB8",
+  NTU  = "#4FA9C4",
+  SMU  = "#F0C66B",
+  SUTD = "#F28C4C"
+)
+
 p_density <- ggplot() +
   geom_sf(
     data = sg_subzones_proj,
-    fill = "#FAFAF7",
+    fill = "#FAFAFA",
     colour = "grey80",
-    linewidth = 0.12
+    linewidth = 0.18
   ) +
   geom_path(
     data = density_contour_lines,
@@ -896,8 +932,8 @@ p_density <- ggplot() +
     fontface = "bold",
     show.legend = FALSE
   ) +
-  scale_colour_manual(values = univ_colors, name = "University") +
-  scale_fill_manual(values = univ_colors, name = "University") +
+  scale_colour_manual(values = density_map_colors, name = "University") +
+  scale_fill_manual(values = density_map_colors, name = "University") +
   coord_sf(
     xlim = c(sg_bbox["xmin"], sg_bbox["xmax"]),
     ylim = c(sg_bbox["ymin"], sg_bbox["ymax"]),
@@ -905,7 +941,7 @@ p_density <- ggplot() +
   ) +
   labs(
     title = "Destination Density Contours Across Singapore",
-    subtitle = "All universities share the same smoothed-trip contour thresholds, enabling direct comparison of trip intensity",
+    subtitle = str_wrap("Compares destination intensity patterns of NUS, NTU, SMU, and SUTD across Singapore.", width = 115),
     caption = contour_caption,
     x = NULL,
     y = NULL
@@ -1011,34 +1047,63 @@ if (chi_result$p.value < 0.001) {
 ```{r topic-share-bar, fig.width=10, fig.height=5.8}
 topic_share_plot <- topic_share %>%
   mutate(
-    topic_label = factor(topic_label, levels = topic_levels),
+    topic_label = factor(
+      topic_label,
+      levels = c(
+        "Education & Professional Services",
+        "Dining & Hospitality",
+        "Mixed-Use & Community",
+        "Industrial & Automotive",
+        "Retail & Personal Care"
+      )
+    ),
     share_pct = share * 100
   )
 
+topic_colors <- c(
+  "Education & Professional Services" = "#BFDFD2",
+  "Dining & Hospitality" = "#51999F",
+  "Mixed-Use & Community" = "#7BC0CD",
+  "Industrial & Automotive" = "#DBCB92",
+  "Retail & Personal Care" = "#ED8D5A"
+)
+
 p_topic_share <- ggplot(
   topic_share_plot,
-  aes(x = topic_label, y = share_pct, fill = origin_university)
+  aes(x = origin_university, y = share_pct, fill = topic_label)
 ) +
-  geom_col(position = position_dodge(width = 0.78), width = 0.72) +
-  scale_fill_manual(values = univ_colors) +
-  scale_y_continuous(labels = label_percent(scale = 1), expand = expansion(mult = c(0, 0.05))) +
+  geom_col(width = 0.46) +
+  geom_text(
+    aes(label = ifelse(share_pct >= 4, paste0(round(share_pct, 1), "%"), "")),
+    position = position_stack(vjust = 0.5),
+    size = 2.8,
+    colour = "white",
+    fontface = "bold"
+  ) +
+  scale_fill_manual(values = topic_colors) +
+  scale_y_continuous(labels = label_percent(scale = 1), expand = expansion(mult = c(0, 0.02))) +
   labs(
-    title = "Destination Topic Share by University",
-    subtitle = "Trip shares are computed from destinations with matched urban-function labels",
+    title = "Proportion of Trips to Each Urban Function by University",
+    subtitle = "Distribution of trips to urban functions across university communities.",
     x = NULL,
     y = "Share of Trips",
-    fill = "University"
+    fill = "Urban function"
   ) +
   theme(
     axis.text.x = element_text(angle = 0, hjust = 0.5),
-    legend.position = "top"
-  )
+    legend.position = "bottom",
+    legend.title = element_text(size = 9, face = "bold"),
+    legend.text = element_text(size = 8),
+    legend.key.height = unit(0.35, "cm"),
+    legend.key.width = unit(0.5, "cm")
+  ) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
 
 print(p_topic_share)
 ggsave(
   file.path(figures_dir, "part4_fig7_topic_share_bar.png"),
   p_topic_share,
-  width = 10,
+  width = 8.8,
   height = 5.8,
   dpi = 300
 )
@@ -1084,11 +1149,11 @@ sankey_data <- od_enriched %>%
   summarise(trips = sum(TOTAL_TRIPS), .groups = "drop")
 
 short_topic_labels <- c(
-  "Education & Professional Services" = "Education &\nProfessional",
-  "Dining & Hospitality" = "Dining &\nHospitality",
-  "Mixed-Use & Community" = "Mixed-Use &\nCommunity",
-  "Industrial & Automotive" = "Industrial &\nAutomotive",
-  "Retail & Personal Care" = "Retail &\nPersonal Care"
+  "Education & Professional Services" = "Education & Professional Services",
+  "Dining & Hospitality" = "Dining & Hospitality",
+  "Mixed-Use & Community" = "Mixed-Use & Community",
+  "Industrial & Automotive" = "Industrial & Automotive",
+  "Retail & Personal Care" = "Retail & Personal Care"
 )
 
 sankey_data <- sankey_data %>%
@@ -1097,7 +1162,7 @@ sankey_data <- sankey_data %>%
 
 ```{r sankey-plot, fig.width=12, fig.height=9}
 sankey_colors <- c(
-  NUS = "#B5E5DC",
+  NUS = "#C8ECE5",
   NTU = "#148CB1",
   SMU = "#EBB33A",
   SUTD = "#ED6510"
@@ -1107,43 +1172,45 @@ p_sankey <- ggplot(
   sankey_data,
   aes(axis1 = origin_university, axis2 = region, axis3 = topic_short, y = trips)
 ) +
-  geom_alluvium(aes(fill = origin_university), width = 0.12, alpha = 0.72, knot.pos = 0.35, colour = "grey78", linewidth = 0.15) +
+  geom_alluvium(aes(fill = origin_university), width = 0.09, alpha = 0.72, knot.pos = 0.35, colour = NA, linewidth = 0) +
   geom_stratum(
     aes(fill = after_stat(stratum)),
-    width = 0.12,
+    width = 0.09,
     colour = "grey55",
     linewidth = 0.35,
-    alpha = 0.88
+    alpha = 1
   ) +
   geom_text(
     stat = "stratum",
     aes(label = after_stat(as.character(stratum))),
     hjust = 0,
-    nudge_x = -0.045,
-    size = 3,
+    nudge_x = 0.055,
+    size = 3.8,
     fontface = "bold",
     colour = "grey15"
   ) +
   scale_x_discrete(limits = c("University", "Region", "Urban Function"), expand = c(0.08, 0.08)) +
-  scale_fill_manual(values = sankey_colors, na.value = "#F5F5F2") +
+  scale_fill_manual(values = sankey_colors, na.value = "#FBFBF8") +
   labs(
     title = "Travel Flow from University to Region to Urban Function",
-    subtitle = "Flow width is proportional to trip volume",
+    subtitle = "Distribution of trips across regions and urban functions by university.",
     x = NULL,
     y = "Trips",
     fill = "University"
   ) +
+  coord_cartesian(clip = "off") +
   theme(
     legend.position = "top",
     panel.grid.major.x = element_blank(),
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_line(colour = "#E6E6E6", linewidth = 0.25),
     axis.text.y = element_blank(),
-    axis.text.x = element_text(size = 14, face = "bold"),
+    axis.text.x = element_text(size = 16, face = "bold"),
     axis.ticks = element_blank(),
     legend.title = element_text(face = "bold"),
     plot.title = element_text(face = "bold"),
-    plot.subtitle = element_text(colour = "grey30")
+    plot.subtitle = element_text(colour = "grey30"),
+    plot.margin = margin(t = 10, r = 70, b = 10, l = 10)
   )
 
 print(p_sankey)

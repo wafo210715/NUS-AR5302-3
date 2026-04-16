@@ -19,6 +19,7 @@ library(sf)
 library(terra)
 library(scales)
 library(knitr)
+library(patchwork)
 library(stringr)
 library(jsonlite)
 
@@ -102,8 +103,14 @@ od_campus <- map_dfr(od_files, ~ read_csv(.x, show_col_types = FALSE)) %>%
   inner_join(origin_lut, by = "ORIGIN_PT_CODE") %>%
   mutate(origin_university = factor(origin_university, levels = univ_levels))
 
+station_topic_path <- if (file.exists(file.path(data_dir, "station_topic_classification_harmonized.csv"))) {
+  file.path(data_dir, "station_topic_classification_harmonized.csv")
+} else {
+  file.path(data_dir, "station_topic_classification.csv")
+}
+
 station_topic <- read_csv(
-  file.path(data_dir, "station_topic_classification.csv"),
+  station_topic_path,
   show_col_types = FALSE,
   col_types = cols(station_code = col_character())
 ) %>%
@@ -197,6 +204,7 @@ distance_coverage <- od_enriched %>%
 
 message("OD files loaded: ", length(od_files))
 message("Campus OD trips: ", comma(sum(od_enriched$TOTAL_TRIPS)))
+message("Station topic file: ", basename(station_topic_path))
 message("Topic coverage: ", percent(topic_coverage$coverage_pct, accuracy = 0.1))
 message("Distance coverage: ", percent(distance_coverage$coverage_pct, accuracy = 0.1))
 ```
@@ -228,10 +236,10 @@ Table: Coverage check for Part 4 analysis inputs.
 
 |origin_university |trips      |topic_matched_pct |distance_matched_pct |
 |:-----------------|:----------|:-----------------|:--------------------|
-|NUS               |12,508,222 |52.6%             |77.9%                |
+|NUS               |12,508,222 |66.0%             |77.9%                |
 |NTU               |3,014,879  |18.7%             |100.0%               |
-|SMU               |8,326,782  |59.5%             |78.2%                |
-|SUTD              |2,765,877  |40.8%             |65.8%                |
+|SMU               |8,326,782  |74.0%             |78.2%                |
+|SUTD              |2,765,877  |58.2%             |65.8%                |
 
 ## Campus Size Summary
 
@@ -376,7 +384,7 @@ p_distance <- ggplot(
     trim = FALSE
   ) +
   geom_boxplot(
-    width = 0.18,
+    width = 0.12,
     fill = "#F8F8F5",
     colour = "#1A1A1A",
     linewidth = 0.65,
@@ -388,7 +396,7 @@ p_distance <- ggplot(
   facet_wrap(~ trip_mode, scales = "free") +
   labs(
     title = "Travel Distance Distribution by University and Mode",
-    subtitle = "Violin plots show sampled trip-weighted distributions; each panel is displayed within its main 99% distance range, and MRT excludes NTU because no MRT-origin trips are available",
+    subtitle = str_wrap("Travel distance distributions by mode for NUS, NTU, SMU, and SUTD.", width = 115),
     x = "University",
     y = "Distance (km)"
   ) +
@@ -428,25 +436,46 @@ top_bus_destinations <- od_enriched %>%
   mutate(destination_name = factor(destination_name, levels = rev(destination_name))) %>%
   ungroup()
 
-p_top_bus <- ggplot(
-  top_bus_destinations,
-  aes(x = destination_name, y = trips, fill = origin_university)
-) +
-  geom_col(width = 0.72) +
-  coord_flip() +
-  facet_wrap(~ origin_university, scales = "free_y", ncol = 2) +
-  scale_fill_manual(values = univ_colors) +
-  scale_y_continuous(labels = comma) +
-  labs(
-    title = "Top 20 Bus Destinations by University",
-    subtitle = "Destination codes with five digits are treated as bus stops",
-    x = "Destination bus stop",
-    y = "Trips"
+make_bus_panel <- function(univ_name) {
+  ggplot(
+    top_bus_destinations %>% filter(origin_university == univ_name),
+    aes(x = destination_name, y = trips, fill = origin_university)
   ) +
+    geom_col(width = 0.72) +
+    coord_flip() +
+    scale_fill_manual(values = univ_colors, drop = FALSE) +
+    scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.04))) +
+    labs(title = univ_name, x = NULL, y = NULL) +
+    theme_minimal(base_size = 12) +
+    theme(
+      legend.position = "none",
+      plot.title = element_text(face = "bold", hjust = 0.5, size = 12),
+      axis.text.y = element_text(size = 7.8),
+      axis.text.x = element_text(size = 9),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor = element_blank(),
+      plot.margin = margin(5.5, 8, 5.5, 5.5)
+    )
+}
+
+bus_axis_label <- ggplot() +
+  theme_void() +
+  annotate("text", x = 1, y = 0.5, label = "Trips", hjust = 1, vjust = 0.5, size = 3.8)
+
+left_bus_col <- make_bus_panel("NUS") / make_bus_panel("SMU") / bus_axis_label +
+  plot_layout(heights = c(1, 1, 0.08))
+
+right_bus_col <- make_bus_panel("NTU") / make_bus_panel("SUTD") / bus_axis_label +
+  plot_layout(heights = c(1, 1, 0.08))
+
+p_top_bus <- (left_bus_col | right_bus_col) +
+  plot_annotation(
+    title = "Top 20 Bus Destinations by University",
+    subtitle = "Destinations ranked by trip frequency for each university community."
+  ) &
   theme(
-    legend.position = "none",
-    strip.text = element_text(face = "bold"),
-    axis.text.y = element_text(size = 7.8)
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(colour = "grey30")
   )
 
 print(p_top_bus)
@@ -505,7 +534,7 @@ p_top_mrt <- ggplot(
   scale_x_discrete(labels = function(x) sub("___.*$", "", x)) +
   labs(
     title = "Top 20 MRT Destinations by University",
-    subtitle = "Analysis focuses on NUS, SMU, and SUTD because NTU has no MRT-origin trips in the current data",
+    subtitle = "Ranked by trip frequency across university communities (NTU has no MRT-origin trips).",
     x = "Destination MRT station",
     y = "Trips"
   ) +
@@ -618,7 +647,7 @@ p_catchment <- ggplot(
   facet_wrap(~ trip_mode, scales = "free_x") +
   labs(
     title = "Trip Shares by Distance Ring and Mode",
-    subtitle = "BUS and MRT trips are shown separately",
+    subtitle = "Spatial reach of trips across distance bands by university.",
     x = NULL,
     y = "Share of Trips",
     fill = "Distance ring"
@@ -896,12 +925,19 @@ campus_label_xy <- campus_points_sf %>%
   ) %>%
   st_drop_geometry()
 
+density_map_colors <- c(
+  NUS  = "#8ECDB8",
+  NTU  = "#4FA9C4",
+  SMU  = "#F0C66B",
+  SUTD = "#F28C4C"
+)
+
 p_density <- ggplot() +
   geom_sf(
     data = sg_subzones_proj,
-    fill = "#FAFAF7",
+    fill = "#FAFAFA",
     colour = "grey80",
-    linewidth = 0.12
+    linewidth = 0.18
   ) +
   geom_path(
     data = density_contour_lines,
@@ -932,8 +968,8 @@ p_density <- ggplot() +
     fontface = "bold",
     show.legend = FALSE
   ) +
-  scale_colour_manual(values = univ_colors, name = "University") +
-  scale_fill_manual(values = univ_colors, name = "University") +
+  scale_colour_manual(values = density_map_colors, name = "University") +
+  scale_fill_manual(values = density_map_colors, name = "University") +
   coord_sf(
     xlim = c(sg_bbox["xmin"], sg_bbox["xmax"]),
     ylim = c(sg_bbox["ymin"], sg_bbox["ymax"]),
@@ -941,7 +977,7 @@ p_density <- ggplot() +
   ) +
   labs(
     title = "Destination Density Contours Across Singapore",
-    subtitle = "All universities share the same smoothed-trip contour thresholds, enabling direct comparison of trip intensity",
+    subtitle = str_wrap("Compares destination intensity patterns of NUS, NTU, SMU, and SUTD across Singapore.", width = 115),
     caption = contour_caption,
     x = NULL,
     y = NULL
@@ -1124,28 +1160,57 @@ if (chi_result$p.value < 0.001) {
 ``` r
 topic_share_plot <- topic_share %>%
   mutate(
-    topic_label = factor(topic_label, levels = topic_levels),
+    topic_label = factor(
+      topic_label,
+      levels = c(
+        "Education & Professional Services",
+        "Dining & Hospitality",
+        "Mixed-Use & Community",
+        "Industrial & Automotive",
+        "Retail & Personal Care"
+      )
+    ),
     share_pct = share * 100
   )
 
+topic_colors <- c(
+  "Education & Professional Services" = "#BFDFD2",
+  "Dining & Hospitality" = "#51999F",
+  "Mixed-Use & Community" = "#7BC0CD",
+  "Industrial & Automotive" = "#DBCB92",
+  "Retail & Personal Care" = "#ED8D5A"
+)
+
 p_topic_share <- ggplot(
   topic_share_plot,
-  aes(x = topic_label, y = share_pct, fill = origin_university)
+  aes(x = origin_university, y = share_pct, fill = topic_label)
 ) +
-  geom_col(position = position_dodge(width = 0.78), width = 0.72) +
-  scale_fill_manual(values = univ_colors) +
-  scale_y_continuous(labels = label_percent(scale = 1), expand = expansion(mult = c(0, 0.05))) +
+  geom_col(width = 0.46) +
+  geom_text(
+    aes(label = ifelse(share_pct >= 4, paste0(round(share_pct, 1), "%"), "")),
+    position = position_stack(vjust = 0.5),
+    size = 2.8,
+    colour = "white",
+    fontface = "bold"
+  ) +
+  scale_fill_manual(values = topic_colors) +
+  scale_y_continuous(labels = label_percent(scale = 1), expand = expansion(mult = c(0, 0.02))) +
   labs(
-    title = "Destination Topic Share by University",
-    subtitle = "Trip shares are computed from destinations with matched urban-function labels",
+    title = "Proportion of Trips to Each Urban Function by University",
+    subtitle = "Distribution of trips to urban functions across university communities.",
     x = NULL,
     y = "Share of Trips",
-    fill = "University"
+    fill = "Urban function"
   ) +
   theme(
     axis.text.x = element_text(angle = 0, hjust = 0.5),
-    legend.position = "top"
-  )
+    legend.position = "bottom",
+    legend.title = element_text(size = 9, face = "bold"),
+    legend.text = element_text(size = 8),
+    legend.key.height = unit(0.35, "cm"),
+    legend.key.width = unit(0.5, "cm")
+  ) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
 
 print(p_topic_share)
 ```
@@ -1156,7 +1221,7 @@ print(p_topic_share)
 ggsave(
   file.path(figures_dir, "part4_fig7_topic_share_bar.png"),
   p_topic_share,
-  width = 10,
+  width = 8.8,
   height = 5.8,
   dpi = 300
 )
@@ -1203,11 +1268,11 @@ sankey_data <- od_enriched %>%
   summarise(trips = sum(TOTAL_TRIPS), .groups = "drop")
 
 short_topic_labels <- c(
-  "Education & Professional Services" = "Education &\nProfessional",
-  "Dining & Hospitality" = "Dining &\nHospitality",
-  "Mixed-Use & Community" = "Mixed-Use &\nCommunity",
-  "Industrial & Automotive" = "Industrial &\nAutomotive",
-  "Retail & Personal Care" = "Retail &\nPersonal Care"
+  "Education & Professional Services" = "Education & Professional Services",
+  "Dining & Hospitality" = "Dining & Hospitality",
+  "Mixed-Use & Community" = "Mixed-Use & Community",
+  "Industrial & Automotive" = "Industrial & Automotive",
+  "Retail & Personal Care" = "Retail & Personal Care"
 )
 
 sankey_data <- sankey_data %>%
@@ -1217,7 +1282,7 @@ sankey_data <- sankey_data %>%
 
 ``` r
 sankey_colors <- c(
-  NUS = "#B5E5DC",
+  NUS = "#C8ECE5",
   NTU = "#148CB1",
   SMU = "#EBB33A",
   SUTD = "#ED6510"
@@ -1227,43 +1292,45 @@ p_sankey <- ggplot(
   sankey_data,
   aes(axis1 = origin_university, axis2 = region, axis3 = topic_short, y = trips)
 ) +
-  geom_alluvium(aes(fill = origin_university), width = 0.12, alpha = 0.72, knot.pos = 0.35, colour = "grey78", linewidth = 0.15) +
+  geom_alluvium(aes(fill = origin_university), width = 0.09, alpha = 0.72, knot.pos = 0.35, colour = NA, linewidth = 0) +
   geom_stratum(
     aes(fill = after_stat(stratum)),
-    width = 0.12,
+    width = 0.09,
     colour = "grey55",
     linewidth = 0.35,
-    alpha = 0.88
+    alpha = 1
   ) +
   geom_text(
     stat = "stratum",
     aes(label = after_stat(as.character(stratum))),
     hjust = 0,
-    nudge_x = -0.045,
-    size = 3,
+    nudge_x = 0.055,
+    size = 3.8,
     fontface = "bold",
     colour = "grey15"
   ) +
   scale_x_discrete(limits = c("University", "Region", "Urban Function"), expand = c(0.08, 0.08)) +
-  scale_fill_manual(values = sankey_colors, na.value = "#F5F5F2") +
+  scale_fill_manual(values = sankey_colors, na.value = "#FBFBF8") +
   labs(
     title = "Travel Flow from University to Region to Urban Function",
-    subtitle = "Flow width is proportional to trip volume",
+    subtitle = "Distribution of trips across regions and urban functions by university.",
     x = NULL,
     y = "Trips",
     fill = "University"
   ) +
+  coord_cartesian(clip = "off") +
   theme(
     legend.position = "top",
     panel.grid.major.x = element_blank(),
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_line(colour = "#E6E6E6", linewidth = 0.25),
     axis.text.y = element_blank(),
-    axis.text.x = element_text(size = 14, face = "bold"),
+    axis.text.x = element_text(size = 16, face = "bold"),
     axis.ticks = element_blank(),
     legend.title = element_text(face = "bold"),
     plot.title = element_text(face = "bold"),
-    plot.subtitle = element_text(colour = "grey30")
+    plot.subtitle = element_text(colour = "grey30"),
+    plot.margin = margin(t = 10, r = 70, b = 10, l = 10)
   )
 
 print(p_sankey)
@@ -1326,12 +1393,12 @@ Table: Weighted Jaccard similarity based on topic-share distributions.
 
 |university_a |university_b | weighted_jaccard|
 |:------------|:------------|----------------:|
-|NUS          |NTU          |            0.762|
-|NUS          |SMU          |            0.535|
-|NUS          |SUTD         |            0.449|
-|NTU          |SMU          |            0.527|
-|NTU          |SUTD         |            0.452|
-|SMU          |SUTD         |            0.696|
+|NUS          |NTU          |            0.702|
+|NUS          |SMU          |            0.646|
+|NUS          |SUTD         |            0.561|
+|NTU          |SMU          |            0.507|
+|NTU          |SUTD         |            0.408|
+|SMU          |SUTD         |            0.653|
 
 ## Topic-Level Chi-Square Test
 
@@ -1394,7 +1461,7 @@ Table: Topic-level chi-square test summary.
 
 | statistic| df|p_value |
 |---------:|--:|:-------|
-|   2117358| 12|0e+00   |
+|   1641690| 12|0e+00   |
 
 ``` r
 kable(
@@ -1410,11 +1477,11 @@ Table: Observed topic-distribution contingency table.
 
 |topic_label                       |NUS       |NTU     |SMU       |SUTD    |
 |:---------------------------------|:---------|:-------|:---------|:-------|
-|Education & Professional Services |1,494,832 |77,877  |731,044   |140,925 |
-|Dining & Hospitality              |609,241   |73,768  |1,257,265 |242,454 |
-|Mixed-Use & Community             |3,875,507 |382,320 |1,815,967 |351,540 |
-|Industrial & Automotive           |298,941   |0       |253,615   |259,590 |
-|Retail & Personal Care            |295,914   |31,197  |897,464   |133,525 |
+|Education & Professional Services |2,107,986 |77,877  |1,411,128 |498,016 |
+|Dining & Hospitality              |781,555   |73,768  |1,281,235 |259,350 |
+|Mixed-Use & Community             |4,436,782 |382,320 |2,151,480 |411,912 |
+|Industrial & Automotive           |374,395   |0       |348,467   |299,811 |
+|Retail & Personal Care            |555,593   |31,197  |971,630   |140,255 |
 
 ``` r
 kable(
@@ -1429,11 +1496,11 @@ Table: Standardized residuals for the topic-level chi-square test.
 
 |topic_label                       |     NUS|     NTU|     SMU|    SUTD|
 |:---------------------------------|-------:|-------:|-------:|-------:|
-|Education & Professional Services |  395.78|  -93.20| -270.90| -171.50|
-|Dining & Hospitality              | -705.22|  -71.50|  672.23|  149.16|
-|Mixed-Use & Community             |  749.25|  292.95| -672.86| -387.24|
-|Industrial & Automotive           | -240.20| -196.56| -120.06|  780.31|
-|Retail & Personal Care            | -687.26| -120.24|  727.06|   57.29|
+|Education & Professional Services |   80.42| -193.33| -129.53|  194.11|
+|Dining & Hospitality              | -573.38|  -30.15|  565.61|   63.72|
+|Mixed-Use & Community             |  754.60|  356.49| -603.84| -507.50|
+|Industrial & Automotive           | -274.42| -196.02|  -66.32|  692.08|
+|Retail & Personal Care            | -468.96| -119.01|  570.98|  -66.99|
 
 ``` r
 kable(
@@ -1449,14 +1516,14 @@ Table: Positive standardized residuals above 2, indicating universities that ove
 
 |topic_label                       |origin_university | std_resid| abs_resid|
 |:---------------------------------|:-----------------|---------:|---------:|
-|Industrial & Automotive           |SUTD              |    780.31|    780.31|
-|Mixed-Use & Community             |NUS               |    749.25|    749.25|
-|Retail & Personal Care            |SMU               |    727.06|    727.06|
-|Dining & Hospitality              |SMU               |    672.23|    672.23|
-|Education & Professional Services |NUS               |    395.78|    395.78|
-|Mixed-Use & Community             |NTU               |    292.95|    292.95|
-|Dining & Hospitality              |SUTD              |    149.16|    149.16|
-|Retail & Personal Care            |SUTD              |     57.29|     57.29|
+|Mixed-Use & Community             |NUS               |    754.60|    754.60|
+|Industrial & Automotive           |SUTD              |    692.08|    692.08|
+|Retail & Personal Care            |SMU               |    570.98|    570.98|
+|Dining & Hospitality              |SMU               |    565.61|    565.61|
+|Mixed-Use & Community             |NTU               |    356.49|    356.49|
+|Education & Professional Services |SUTD              |    194.11|    194.11|
+|Education & Professional Services |NUS               |     80.42|     80.42|
+|Dining & Hospitality              |SUTD              |     63.72|     63.72|
 
 ``` r
 kable(
@@ -1469,12 +1536,12 @@ kable(
 
 Table: Universities with significant positive deviations in topic preference.
 
-|origin_university |preferred_topics                                                                                      |
-|:-----------------|:-----------------------------------------------------------------------------------------------------|
-|NTU               |Mixed-Use & Community (z=292.95)                                                                      |
-|NUS               |Mixed-Use & Community (z=749.25); Education & Professional Services (z=395.78)                        |
-|SMU               |Retail & Personal Care (z=727.06); Dining & Hospitality (z=672.23)                                    |
-|SUTD              |Industrial & Automotive (z=780.31); Dining & Hospitality (z=149.16); Retail & Personal Care (z=57.29) |
+|origin_university |preferred_topics                                                                                                 |
+|:-----------------|:----------------------------------------------------------------------------------------------------------------|
+|NTU               |Mixed-Use & Community (z=356.49)                                                                                 |
+|NUS               |Mixed-Use & Community (z=754.6); Education & Professional Services (z=80.42)                                     |
+|SMU               |Retail & Personal Care (z=570.98); Dining & Hospitality (z=565.61)                                               |
+|SUTD              |Industrial & Automotive (z=692.08); Education & Professional Services (z=194.11); Dining & Hospitality (z=63.72) |
 
 ``` r
 cat(
@@ -1487,7 +1554,7 @@ cat(
 ```
 
 ```
-## Chi-square statistic = 2117358.29, df = 12, p-value = 0e+00.
+## Chi-square statistic = 1641689.53, df = 12, p-value = 0e+00.
 ```
 
 ``` r
@@ -1514,7 +1581,7 @@ if (nrow(topic_preference_text) > 0) {
 ```
 
 ```
-## NTU is significantly associated with Mixed-Use & Community (z=292.95). NUS is significantly associated with Mixed-Use & Community (z=749.25); Education & Professional Services (z=395.78). SMU is significantly associated with Retail & Personal Care (z=727.06); Dining & Hospitality (z=672.23). SUTD is significantly associated with Industrial & Automotive (z=780.31); Dining & Hospitality (z=149.16); Retail & Personal Care (z=57.29).
+## NTU is significantly associated with Mixed-Use & Community (z=356.49). NUS is significantly associated with Mixed-Use & Community (z=754.6); Education & Professional Services (z=80.42). SMU is significantly associated with Retail & Personal Care (z=570.98); Dining & Hospitality (z=565.61). SUTD is significantly associated with Industrial & Automotive (z=692.08); Education & Professional Services (z=194.11); Dining & Hospitality (z=63.72).
 ```
 
 ``` r
@@ -1542,5 +1609,5 @@ Table: Quick notes to cite in the narrative text.
 
 |metric                  |value |
 |:-----------------------|:-----|
-|Topic match coverage    |49.7% |
+|Topic match coverage    |62.3% |
 |Distance match coverage |79.2% |
