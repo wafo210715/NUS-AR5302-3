@@ -1,9 +1,9 @@
 # Part 2 开发日志：POI-based Urban Function Identification (Overture + LDA)
 
 **负责人：** YK
-**分支：** `YK`
-**状态：** 已完成
-**开发日期：** 2026-04-14 ~ 2026-04-15
+**分支：** `YK_v2`
+**状态：** 已完成（含 2026-04-16 Bug 修复与重跑）
+**开发日期：** 2026-04-14 ~ 2026-04-16
 
 ---
 
@@ -311,7 +311,7 @@ Rscript utils/export_lda_beta.R
 
 **发现日期：** 2026-04-16
 **发现者：** Part 4 队友 + YK 复核
-**状态：** 待修复
+**状态：** ✅ 已修复并完成 pipeline 重跑（2026-04-16，见第十节）
 
 ### 问题概述
 
@@ -425,11 +425,68 @@ station_class <- station_class %>%
 - LDA 模型需要重新训练（因为 DTM 变化）
 - `station_topic_classification.csv` 需要重新生成
 
-### 待办事项
+### 待办事项（全部完成）
 
-- [ ] 修复 Bug 1：去重逻辑改为 X+Y 双坐标
-- [ ] 修复 Bug 2：classification 输出去重
-- [ ] 清理 Bug 3：删除 `data/` 根目录的旧 OSM 文件
-- [ ] 重新运行 Part 2 pipeline
-- [ ] 重新验证站点数量
-- [ ] 通知 Part 4 队友更新数据源
+- [x] 修复 Bug 1：去重逻辑改为 X+Y 双坐标 —— commit `f1ed45e`
+- [x] 修复 Bug 2：classification 输出去重（join 前 `distinct()`） —— commit `f1ed45e`
+- [x] 清理 Bug 3：删除 `data/` 根目录的旧 OSM 文件 —— 已不在仓库工作区
+- [x] 重新运行 Part 2 pipeline —— commit `db09ea9`，2026-04-16 16:31~16:33
+- [x] 重新验证站点数量 —— 4,151 unique stations（详见第十节）
+- [x] 通知 Part 4 队友更新数据源 —— 由 YK 在群聊告知
+
+---
+
+## 十、2026-04-16 Bug 修复与 Pipeline 重跑结果
+
+### 10.1 代码修复
+
+| Bug | 修复位置 | 修复内容 | Commit |
+|-----|----------|----------|--------|
+| Bug 1 | `scripts/part2_poi_lda_yk.Rmd` L199-206 | 去重键改为 `paste(round(X,5), round(Y,5), sep="_")`，同时使用经纬度两维坐标 | `f1ed45e` |
+| Bug 2 | `scripts/part2_poi_lda_yk.Rmd` L589-598 | join 前加 `distinct(station_code, .keep_all = TRUE)`，避免 MRT 多出口导致的一对多展开 | `f1ed45e` |
+| Bug 3 | `data/station_poi_counts.csv`、`data/station_topic_classification.csv` | 删除 `data/` 根目录下的旧 OSM 残留文件 | 工作区清理（已确认不存在） |
+| 额外 | `scripts/part2_poi_lda_yk.Rmd` | 修复重复 `message()` 调用；在 assignment 与 DTM 两步添加 `station_code` 的 NA / 空字符串过滤 | `db09ea9` |
+
+### 10.2 重跑后的产出文件
+
+| 文件 | 行数（含表头） | 唯一站点数 | 变化 |
+|------|----------------|-----------|------|
+| `data/overture_pois/poi_station_assignment.csv` | 135,452 | — | 原 135,879 → 135,451（空 `station_code` 行被过滤） |
+| `data/overture_pois/station_poi_counts.csv` | 4,152 | **4,151** | 原 3,175 → **+976** |
+| `data/overture_pois/station_topic_classification.csv` | 4,152 | **4,151** | 原 3,194 行 / 3,175 唯一 → 行数 = 唯一数，**19 个重复行已消除** |
+
+> 注：修复前手工推算"应保留 3,855 站点"是基于当时有 bug 的 upstream 计算。实际修复去重逻辑后，上游保留了更多独立站点，最终 LDA 入模站点数为 4,151，高于当初的估计值，这是合理的。
+
+Bug 列表中点名的缺失高 POI 覆盖站点（52008、42311、47559、22009、14141、80159、02149、47751）全部已回到 `station_topic_classification.csv`，核查通过。
+
+### 10.3 重跑后的主题分类结果（K=5）
+
+Top 10 类别经检查与原先的主题标签仍然一致（seed=42 下 5 个主题的语义没有漂移），因此 `topic_labels.csv` 无需修改。但**站点到主题的分配比例发生了显著变化**——这是本次修复最值得关注的发现：
+
+| Topic | 标签 | 修复前站点数 | 修复前占比 | 修复后站点数 | 修复后占比 |
+|-------|------|-------------|-----------|-------------|-----------|
+| 1 | Education & Professional Services | ~500 | 15.7% | 275 | **6.6%** |
+| 2 | Dining & Hospitality | ~560 | 17.5% | 721 | 17.4% |
+| 3 | Mixed-Use & Community | ~1,615 | **50.6%** | 490 | **11.8%** |
+| 4 | Industrial & Automotive | ~270 | 8.5% | 703 | **16.9%** |
+| 5 | Retail & Personal Care | ~250 | 7.8% | 1,962 | **47.3%** |
+| — | 总计 | 3,194 | 100% | 4,151 | 100% |
+
+**关键观察：**
+
+1. **原先第六节提出的"Topic 3 占比 50.6%"问题自然消解**：去重 bug 导致的站点合并错误地把大量不同类型的站点合并到同一坐标文档中，使 LDA 把它们都推入 Mixed-Use 这一"杂项"主题。修复后 Topic 3 回落到 11.8%，属于合理区间。
+2. **Retail & Personal Care 成为新的主导主题（47.3%）**：在新加坡的实际城市结构下这是合理的——HDB 邻里中心常见 beauty_salon、clothing_store、shopping、bakery 等零售/个人服务组合，许多原先被错误合并的公交站点其实服务的是这种"邻里零售集群"。
+3. **Industrial & Automotive 占比翻倍**：说明之前错误去重严重低估了工业/汽车类站点数量。新加坡工业园区（如 Tuas、Sungei Kadut）有密集但沿路排布的公交站，而这些站点沿南北路经常共享相同经度，正是 Bug 1 的主要受害者。
+4. **后续建议：** 报告与 Part 4 在引用 Topic 3 占比时须使用新数据（11.8%），原"Mixed-Use 是新加坡 HDB 新镇特征"的叙述需要改写——新的叙事更接近"Retail & Personal Care 是 HDB 邻里中心的核心功能"。
+
+### 10.4 验证方法
+
+- ✅ 在 `part2_poi_lda_yk.Rmd` 内 grep 确认 Bug 1、Bug 2 修复代码已在位（L200-201、L592）。
+- ✅ `ls data/station_poi_counts.csv data/station_topic_classification.csv` 返回 "No such file"，确认 Bug 3 旧 OSM 文件已清理。
+- ✅ `station_topic_classification.csv` 行数 = 唯一 `station_code` 数（4,151 = 4,151），确认 Bug 2 无残留重复。
+- ✅ `beta_k5.csv` Top 10 类别肉眼比对与原标签一致，topic_labels 无需重映射。
+
+### 10.5 涉及的 commit（YK_v2 分支）
+
+- `f1ed45e` — Part 2: fix station dedup and join bugs causing missing stations
+- `db09ea9` — Part 2: fix runtime errors and re-run pipeline with corrected dedup
