@@ -101,23 +101,68 @@ od_campus <- map_dfr(od_files, ~ read_csv(.x, show_col_types = FALSE)) %>%
   inner_join(origin_lut, by = "ORIGIN_PT_CODE") %>%
   mutate(origin_university = factor(origin_university, levels = univ_levels))
 
-station_topic_path <- if (file.exists(file.path(data_dir, "station_topic_classification_harmonized.csv"))) {
-  file.path(data_dir, "station_topic_classification_harmonized.csv")
+station_topic_path <- if (file.exists(file.path(data_dir, "station_topic_classification_supplemented.csv"))) {
+  file.path(data_dir, "station_topic_classification_supplemented.csv")
 } else {
   file.path(data_dir, "station_topic_classification.csv")
 }
 
-station_topic <- read_csv(
+station_topic_raw <- read_csv(
   station_topic_path,
   show_col_types = FALSE,
-  col_types = cols(station_code = col_character())
-) %>%
-  arrange(desc(purity), desc(total_pois)) %>%
+  col_types = cols(
+    station_code = col_character(),
+    supplemented_from = col_character(),
+    supplemented_station_name = col_character(),
+    supplemented_via_compound = col_character()
+  )
+) 
+
+topic_order_col <- if ("total_pois" %in% names(station_topic_raw)) {
+  "total_pois"
+} else if ("poi_count" %in% names(station_topic_raw)) {
+  "poi_count"
+} else {
+  NA_character_
+}
+
+station_topic <- station_topic_raw %>%
+  mutate(
+    topic_order_metric = if (!is.na(topic_order_col)) .data[[topic_order_col]] else NA_real_
+  ) %>%
+  arrange(desc(purity), desc(topic_order_metric)) %>%
   distinct(station_code, .keep_all = TRUE) %>%
   transmute(
     DESTINATION_PT_CODE = station_code,
     dominant_topic,
     topic_label = label
+  )
+
+compound_topic_lookup <- if ("supplemented_via_compound" %in% names(station_topic_raw)) {
+  station_topic_raw %>%
+    filter(
+      !is.na(supplemented_via_compound),
+      supplemented_via_compound != "",
+      !is.na(label)
+    ) %>%
+    mutate(
+      topic_order_metric = if (!is.na(topic_order_col)) .data[[topic_order_col]] else NA_real_
+    ) %>%
+    arrange(desc(purity), desc(topic_order_metric)) %>%
+    distinct(supplemented_via_compound, .keep_all = TRUE) %>%
+    transmute(
+      DESTINATION_PT_CODE = supplemented_via_compound,
+      topic_label_from_compound = label
+    )
+} else {
+  tibble(
+    DESTINATION_PT_CODE = character(0),
+    topic_label_from_compound = character(0)
+  )
+} %>%
+  mutate(
+    DESTINATION_PT_CODE = as.character(DESTINATION_PT_CODE),
+    topic_label_from_compound = as.character(topic_label_from_compound)
   )
 
 bus_coords <- read_csv(
@@ -161,6 +206,7 @@ all_coords <- bind_rows(bus_coords, mrt_coords) %>%
 
 od_enriched <- od_campus %>%
   left_join(station_topic, by = "DESTINATION_PT_CODE") %>%
+  left_join(compound_topic_lookup, by = "DESTINATION_PT_CODE") %>%
   left_join(mrt_names, by = "DESTINATION_PT_CODE") %>%
   left_join(bus_stop_names, by = "DESTINATION_PT_CODE", suffix = c("", "_bus")) %>%
   left_join(all_coords, by = c("ORIGIN_PT_CODE" = "pt_code")) %>%
@@ -168,6 +214,7 @@ od_enriched <- od_campus %>%
   left_join(all_coords, by = c("DESTINATION_PT_CODE" = "pt_code")) %>%
   rename(dest_lon = longitude, dest_lat = latitude, dest_coord_source = coord_source) %>%
   mutate(
+    topic_label = coalesce(topic_label, topic_label_from_compound),
     trip_mode = if_else(PT_TYPE == "TRAIN", "MRT", "BUS"),
     destination_mode = if_else(str_detect(DESTINATION_PT_CODE, "^\\d{5}$"), "BUS", "MRT"),
     destination_name = case_when(
@@ -479,7 +526,7 @@ p_top_mrt <- ggplot(
   scale_x_discrete(labels = function(x) sub("___.*$", "", x)) +
   labs(
     title = "Top 20 MRT Destinations by University",
-    subtitle = "Ranked by trip frequency across university communities (NTU has no MRT-origin trips).",
+    subtitle = "Ranked by trip frequency across university communities.",
     x = "Destination MRT station",
     y = "Trips"
   ) +
@@ -571,7 +618,7 @@ p_catchment <- ggplot(
   facet_wrap(~ trip_mode, scales = "free_x") +
   labs(
     title = "Trip Shares by Distance Ring and Mode",
-    subtitle = "Spatial reach of trips across distance bands by university.",
+    subtitle = "Trip share distribution across distance bands for bus and MRT.",
     x = NULL,
     y = "Share of Trips",
     fill = "Distance ring"
@@ -1074,9 +1121,9 @@ p_topic_share <- ggplot(
 ) +
   geom_col(width = 0.46) +
   geom_text(
-    aes(label = ifelse(share_pct >= 4, paste0(round(share_pct, 1), "%"), "")),
+    aes(label = ifelse(share_pct >= 2, paste0(round(share_pct, 1), "%"), "")),
     position = position_stack(vjust = 0.5),
-    size = 2.8,
+    size = 2.6,
     colour = "white",
     fontface = "bold"
   ) +
@@ -1182,9 +1229,18 @@ p_sankey <- ggplot(
   ) +
   geom_text(
     stat = "stratum",
-    aes(label = after_stat(as.character(stratum))),
+    aes(label = ifelse(after_stat(x) == 1, "", after_stat(as.character(stratum)))),
     hjust = 0,
     nudge_x = 0.055,
+    size = 3.8,
+    fontface = "bold",
+    colour = "grey15"
+  ) +
+  geom_text(
+    stat = "stratum",
+    aes(label = ifelse(after_stat(x) == 1, after_stat(as.character(stratum)), "")),
+    hjust = 1,
+    nudge_x = -0.07,
     size = 3.8,
     fontface = "bold",
     colour = "grey15"
@@ -1210,7 +1266,7 @@ p_sankey <- ggplot(
     legend.title = element_text(face = "bold"),
     plot.title = element_text(face = "bold"),
     plot.subtitle = element_text(colour = "grey30"),
-    plot.margin = margin(t = 10, r = 70, b = 10, l = 10)
+    plot.margin = margin(t = 10, r = 70, b = 10, l = 90)
   )
 
 print(p_sankey)

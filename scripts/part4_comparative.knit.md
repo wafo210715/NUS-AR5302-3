@@ -103,23 +103,68 @@ od_campus <- map_dfr(od_files, ~ read_csv(.x, show_col_types = FALSE)) %>%
   inner_join(origin_lut, by = "ORIGIN_PT_CODE") %>%
   mutate(origin_university = factor(origin_university, levels = univ_levels))
 
-station_topic_path <- if (file.exists(file.path(data_dir, "station_topic_classification_harmonized.csv"))) {
-  file.path(data_dir, "station_topic_classification_harmonized.csv")
+station_topic_path <- if (file.exists(file.path(data_dir, "station_topic_classification_supplemented.csv"))) {
+  file.path(data_dir, "station_topic_classification_supplemented.csv")
 } else {
   file.path(data_dir, "station_topic_classification.csv")
 }
 
-station_topic <- read_csv(
+station_topic_raw <- read_csv(
   station_topic_path,
   show_col_types = FALSE,
-  col_types = cols(station_code = col_character())
-) %>%
-  arrange(desc(purity), desc(total_pois)) %>%
+  col_types = cols(
+    station_code = col_character(),
+    supplemented_from = col_character(),
+    supplemented_station_name = col_character(),
+    supplemented_via_compound = col_character()
+  )
+) 
+
+topic_order_col <- if ("total_pois" %in% names(station_topic_raw)) {
+  "total_pois"
+} else if ("poi_count" %in% names(station_topic_raw)) {
+  "poi_count"
+} else {
+  NA_character_
+}
+
+station_topic <- station_topic_raw %>%
+  mutate(
+    topic_order_metric = if (!is.na(topic_order_col)) .data[[topic_order_col]] else NA_real_
+  ) %>%
+  arrange(desc(purity), desc(topic_order_metric)) %>%
   distinct(station_code, .keep_all = TRUE) %>%
   transmute(
     DESTINATION_PT_CODE = station_code,
     dominant_topic,
     topic_label = label
+  )
+
+compound_topic_lookup <- if ("supplemented_via_compound" %in% names(station_topic_raw)) {
+  station_topic_raw %>%
+    filter(
+      !is.na(supplemented_via_compound),
+      supplemented_via_compound != "",
+      !is.na(label)
+    ) %>%
+    mutate(
+      topic_order_metric = if (!is.na(topic_order_col)) .data[[topic_order_col]] else NA_real_
+    ) %>%
+    arrange(desc(purity), desc(topic_order_metric)) %>%
+    distinct(supplemented_via_compound, .keep_all = TRUE) %>%
+    transmute(
+      DESTINATION_PT_CODE = supplemented_via_compound,
+      topic_label_from_compound = label
+    )
+} else {
+  tibble(
+    DESTINATION_PT_CODE = character(0),
+    topic_label_from_compound = character(0)
+  )
+} %>%
+  mutate(
+    DESTINATION_PT_CODE = as.character(DESTINATION_PT_CODE),
+    topic_label_from_compound = as.character(topic_label_from_compound)
   )
 
 bus_coords <- read_csv(
@@ -163,6 +208,7 @@ all_coords <- bind_rows(bus_coords, mrt_coords) %>%
 
 od_enriched <- od_campus %>%
   left_join(station_topic, by = "DESTINATION_PT_CODE") %>%
+  left_join(compound_topic_lookup, by = "DESTINATION_PT_CODE") %>%
   left_join(mrt_names, by = "DESTINATION_PT_CODE") %>%
   left_join(bus_stop_names, by = "DESTINATION_PT_CODE", suffix = c("", "_bus")) %>%
   left_join(all_coords, by = c("ORIGIN_PT_CODE" = "pt_code")) %>%
@@ -170,6 +216,7 @@ od_enriched <- od_campus %>%
   left_join(all_coords, by = c("DESTINATION_PT_CODE" = "pt_code")) %>%
   rename(dest_lon = longitude, dest_lat = latitude, dest_coord_source = coord_source) %>%
   mutate(
+    topic_label = coalesce(topic_label, topic_label_from_compound),
     trip_mode = if_else(PT_TYPE == "TRAIN", "MRT", "BUS"),
     destination_mode = if_else(str_detect(DESTINATION_PT_CODE, "^\\d{5}$"), "BUS", "MRT"),
     destination_name = case_when(
@@ -236,10 +283,10 @@ Table: Coverage check for Part 4 analysis inputs.
 
 |origin_university |trips      |topic_matched_pct |distance_matched_pct |
 |:-----------------|:----------|:-----------------|:--------------------|
-|NUS               |12,508,222 |66.0%             |77.9%                |
-|NTU               |3,014,879  |18.7%             |100.0%               |
-|SMU               |8,326,782  |74.0%             |78.2%                |
-|SUTD              |2,765,877  |58.2%             |65.8%                |
+|NUS               |12,508,222 |92.7%             |77.9%                |
+|NTU               |3,014,879  |67.8%             |100.0%               |
+|SMU               |8,326,782  |93.2%             |78.2%                |
+|SUTD              |2,765,877  |85.3%             |65.8%                |
 
 ## Campus Size Summary
 
@@ -534,7 +581,7 @@ p_top_mrt <- ggplot(
   scale_x_discrete(labels = function(x) sub("___.*$", "", x)) +
   labs(
     title = "Top 20 MRT Destinations by University",
-    subtitle = "Ranked by trip frequency across university communities (NTU has no MRT-origin trips).",
+    subtitle = "Ranked by trip frequency across university communities.",
     x = "Destination MRT station",
     y = "Trips"
   ) +
@@ -647,7 +694,7 @@ p_catchment <- ggplot(
   facet_wrap(~ trip_mode, scales = "free_x") +
   labs(
     title = "Trip Shares by Distance Ring and Mode",
-    subtitle = "Spatial reach of trips across distance bands by university.",
+    subtitle = "Trip share distribution across distance bands for bus and MRT.",
     x = NULL,
     y = "Share of Trips",
     fill = "Distance ring"
@@ -1187,9 +1234,9 @@ p_topic_share <- ggplot(
 ) +
   geom_col(width = 0.46) +
   geom_text(
-    aes(label = ifelse(share_pct >= 4, paste0(round(share_pct, 1), "%"), "")),
+    aes(label = ifelse(share_pct >= 2, paste0(round(share_pct, 1), "%"), "")),
     position = position_stack(vjust = 0.5),
-    size = 2.8,
+    size = 2.6,
     colour = "white",
     fontface = "bold"
   ) +
@@ -1302,9 +1349,18 @@ p_sankey <- ggplot(
   ) +
   geom_text(
     stat = "stratum",
-    aes(label = after_stat(as.character(stratum))),
+    aes(label = ifelse(after_stat(x) == 1, "", after_stat(as.character(stratum)))),
     hjust = 0,
     nudge_x = 0.055,
+    size = 3.8,
+    fontface = "bold",
+    colour = "grey15"
+  ) +
+  geom_text(
+    stat = "stratum",
+    aes(label = ifelse(after_stat(x) == 1, after_stat(as.character(stratum)), "")),
+    hjust = 1,
+    nudge_x = -0.07,
     size = 3.8,
     fontface = "bold",
     colour = "grey15"
@@ -1330,7 +1386,7 @@ p_sankey <- ggplot(
     legend.title = element_text(face = "bold"),
     plot.title = element_text(face = "bold"),
     plot.subtitle = element_text(colour = "grey30"),
-    plot.margin = margin(t = 10, r = 70, b = 10, l = 10)
+    plot.margin = margin(t = 10, r = 70, b = 10, l = 90)
   )
 
 print(p_sankey)
@@ -1393,12 +1449,12 @@ Table: Weighted Jaccard similarity based on topic-share distributions.
 
 |university_a |university_b | weighted_jaccard|
 |:------------|:------------|----------------:|
-|NUS          |NTU          |            0.702|
-|NUS          |SMU          |            0.646|
-|NUS          |SUTD         |            0.561|
-|NTU          |SMU          |            0.507|
-|NTU          |SUTD         |            0.408|
-|SMU          |SUTD         |            0.653|
+|NUS          |NTU          |            0.697|
+|NUS          |SMU          |            0.840|
+|NUS          |SUTD         |            0.797|
+|NTU          |SMU          |            0.648|
+|NTU          |SUTD         |            0.666|
+|SMU          |SUTD         |            0.888|
 
 ## Topic-Level Chi-Square Test
 
@@ -1461,7 +1517,7 @@ Table: Topic-level chi-square test summary.
 
 | statistic| df|p_value |
 |---------:|--:|:-------|
-|   1641690| 12|0e+00   |
+|  779517.6| 12|0e+00   |
 
 ``` r
 kable(
@@ -1475,13 +1531,13 @@ kable(
 
 Table: Observed topic-distribution contingency table.
 
-|topic_label                       |NUS       |NTU     |SMU       |SUTD    |
-|:---------------------------------|:---------|:-------|:---------|:-------|
-|Education & Professional Services |2,107,986 |77,877  |1,411,128 |498,016 |
-|Dining & Hospitality              |781,555   |73,768  |1,281,235 |259,350 |
-|Mixed-Use & Community             |4,436,782 |382,320 |2,151,480 |411,912 |
-|Industrial & Automotive           |374,395   |0       |348,467   |299,811 |
-|Retail & Personal Care            |555,593   |31,197  |971,630   |140,255 |
+|topic_label                       |NUS       |NTU       |SMU       |SUTD      |
+|:---------------------------------|:---------|:---------|:---------|:---------|
+|Education & Professional Services |410,925   |15,579    |611,697   |120,827   |
+|Dining & Hospitality              |2,473,111 |175,118   |1,422,446 |358,546   |
+|Mixed-Use & Community             |5,903,320 |1,346,833 |3,509,499 |1,081,255 |
+|Industrial & Automotive           |268,610   |0         |346,688   |107,676   |
+|Retail & Personal Care            |2,533,575 |507,867   |1,866,344 |692,027   |
 
 ``` r
 kable(
@@ -1496,11 +1552,11 @@ Table: Standardized residuals for the topic-level chi-square test.
 
 |topic_label                       |     NUS|     NTU|     SMU|    SUTD|
 |:---------------------------------|-------:|-------:|-------:|-------:|
-|Education & Professional Services |   80.42| -193.33| -129.53|  194.11|
-|Dining & Hospitality              | -573.38|  -30.15|  565.61|   63.72|
-|Mixed-Use & Community             |  754.60|  356.49| -603.84| -507.50|
-|Industrial & Automotive           | -274.42| -196.02|  -66.32|  692.08|
-|Retail & Personal Care            | -468.96| -119.01|  570.98|  -66.99|
+|Education & Professional Services | -294.59| -285.96|  473.58|   17.99|
+|Dining & Hospitality              |  328.73| -387.41|  -26.97| -143.70|
+|Mixed-Use & Community             |  103.16|  478.57| -312.74| -130.90|
+|Industrial & Automotive           | -201.10| -265.07|  281.66|  143.05|
+|Retail & Personal Care            | -192.25|   44.18|   38.77|  219.02|
 
 ``` r
 kable(
@@ -1516,14 +1572,16 @@ Table: Positive standardized residuals above 2, indicating universities that ove
 
 |topic_label                       |origin_university | std_resid| abs_resid|
 |:---------------------------------|:-----------------|---------:|---------:|
-|Mixed-Use & Community             |NUS               |    754.60|    754.60|
-|Industrial & Automotive           |SUTD              |    692.08|    692.08|
-|Retail & Personal Care            |SMU               |    570.98|    570.98|
-|Dining & Hospitality              |SMU               |    565.61|    565.61|
-|Mixed-Use & Community             |NTU               |    356.49|    356.49|
-|Education & Professional Services |SUTD              |    194.11|    194.11|
-|Education & Professional Services |NUS               |     80.42|     80.42|
-|Dining & Hospitality              |SUTD              |     63.72|     63.72|
+|Mixed-Use & Community             |NTU               |    478.57|    478.57|
+|Education & Professional Services |SMU               |    473.58|    473.58|
+|Dining & Hospitality              |NUS               |    328.73|    328.73|
+|Industrial & Automotive           |SMU               |    281.66|    281.66|
+|Retail & Personal Care            |SUTD              |    219.02|    219.02|
+|Industrial & Automotive           |SUTD              |    143.05|    143.05|
+|Mixed-Use & Community             |NUS               |    103.16|    103.16|
+|Retail & Personal Care            |NTU               |     44.18|     44.18|
+|Retail & Personal Care            |SMU               |     38.77|     38.77|
+|Education & Professional Services |SUTD              |     17.99|     17.99|
 
 ``` r
 kable(
@@ -1536,12 +1594,12 @@ kable(
 
 Table: Universities with significant positive deviations in topic preference.
 
-|origin_university |preferred_topics                                                                                                 |
-|:-----------------|:----------------------------------------------------------------------------------------------------------------|
-|NTU               |Mixed-Use & Community (z=356.49)                                                                                 |
-|NUS               |Mixed-Use & Community (z=754.6); Education & Professional Services (z=80.42)                                     |
-|SMU               |Retail & Personal Care (z=570.98); Dining & Hospitality (z=565.61)                                               |
-|SUTD              |Industrial & Automotive (z=692.08); Education & Professional Services (z=194.11); Dining & Hospitality (z=63.72) |
+|origin_university |preferred_topics                                                                                                   |
+|:-----------------|:------------------------------------------------------------------------------------------------------------------|
+|NTU               |Mixed-Use & Community (z=478.57); Retail & Personal Care (z=44.18)                                                 |
+|NUS               |Dining & Hospitality (z=328.73); Mixed-Use & Community (z=103.16)                                                  |
+|SMU               |Education & Professional Services (z=473.58); Industrial & Automotive (z=281.66); Retail & Personal Care (z=38.77) |
+|SUTD              |Retail & Personal Care (z=219.02); Industrial & Automotive (z=143.05); Education & Professional Services (z=17.99) |
 
 ``` r
 cat(
@@ -1554,7 +1612,7 @@ cat(
 ```
 
 ```
-## Chi-square statistic = 1641689.53, df = 12, p-value = 0e+00.
+## Chi-square statistic = 779517.62, df = 12, p-value = 0e+00.
 ```
 
 ``` r
@@ -1581,7 +1639,7 @@ if (nrow(topic_preference_text) > 0) {
 ```
 
 ```
-## NTU is significantly associated with Mixed-Use & Community (z=356.49). NUS is significantly associated with Mixed-Use & Community (z=754.6); Education & Professional Services (z=80.42). SMU is significantly associated with Retail & Personal Care (z=570.98); Dining & Hospitality (z=565.61). SUTD is significantly associated with Industrial & Automotive (z=692.08); Education & Professional Services (z=194.11); Dining & Hospitality (z=63.72).
+## NTU is significantly associated with Mixed-Use & Community (z=478.57); Retail & Personal Care (z=44.18). NUS is significantly associated with Dining & Hospitality (z=328.73); Mixed-Use & Community (z=103.16). SMU is significantly associated with Education & Professional Services (z=473.58); Industrial & Automotive (z=281.66); Retail & Personal Care (z=38.77). SUTD is significantly associated with Retail & Personal Care (z=219.02); Industrial & Automotive (z=143.05); Education & Professional Services (z=17.99).
 ```
 
 ``` r
@@ -1609,5 +1667,5 @@ Table: Quick notes to cite in the narrative text.
 
 |metric                  |value |
 |:-----------------------|:-----|
-|Topic match coverage    |62.3% |
+|Topic match coverage    |89.2% |
 |Distance match coverage |79.2% |
