@@ -1584,24 +1584,6 @@ Table: Positive standardized residuals above 2, indicating universities that ove
 |Education & Professional Services |SUTD              |     17.99|     17.99|
 
 ``` r
-kable(
-  topic_preference_text,
-  caption = "Universities with significant positive deviations in topic preference."
-)
-```
-
-
-
-Table: Universities with significant positive deviations in topic preference.
-
-|origin_university |preferred_topics                                                                                                   |
-|:-----------------|:------------------------------------------------------------------------------------------------------------------|
-|NTU               |Mixed-Use & Community (z=478.57); Retail & Personal Care (z=44.18)                                                 |
-|NUS               |Dining & Hospitality (z=328.73); Mixed-Use & Community (z=103.16)                                                  |
-|SMU               |Education & Professional Services (z=473.58); Industrial & Automotive (z=281.66); Retail & Personal Care (z=38.77) |
-|SUTD              |Retail & Personal Care (z=219.02); Industrial & Automotive (z=143.05); Education & Professional Services (z=17.99) |
-
-``` r
 cat(
   paste0(
     "Chi-square statistic = ", round(topic_chi_result$statistic, 2),

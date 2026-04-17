@@ -2189,41 +2189,6 @@ kable(
 </tr>
 </tbody>
 </table>
-<pre class="r"><code>kable(
-  topic_preference_text,
-  caption = &quot;Universities with significant positive deviations in topic preference.&quot;
-)</code></pre>
-<table>
-<caption>Universities with significant positive deviations in topic preference.</caption>
-<colgroup>
-<col width="13%" />
-<col width="86%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="left">origin_university</th>
-<th align="left">preferred_topics</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">NTU</td>
-<td align="left">Mixed-Use &amp; Community (z=478.57); Retail &amp; Personal Care (z=44.18)</td>
-</tr>
-<tr class="even">
-<td align="left">NUS</td>
-<td align="left">Dining &amp; Hospitality (z=328.73); Mixed-Use &amp; Community (z=103.16)</td>
-</tr>
-<tr class="odd">
-<td align="left">SMU</td>
-<td align="left">Education &amp; Professional Services (z=473.58); Industrial &amp; Automotive (z=281.66); Retail &amp; Personal Care (z=38.77)</td>
-</tr>
-<tr class="even">
-<td align="left">SUTD</td>
-<td align="left">Retail &amp; Personal Care (z=219.02); Industrial &amp; Automotive (z=143.05); Education &amp; Professional Services (z=17.99)</td>
-</tr>
-</tbody>
-</table>
 <pre class="r"><code>cat(
   paste0(
     &quot;Chi-square statistic = &quot;, round(topic_chi_result$statistic, 2),

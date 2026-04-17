@@ -1387,11 +1387,6 @@ kable(
   caption = "Positive standardized residuals above 2, indicating universities that over-index in specific urban functions."
 )
 
-kable(
-  topic_preference_text,
-  caption = "Universities with significant positive deviations in topic preference."
-)
-
 cat(
   paste0(
     "Chi-square statistic = ", round(topic_chi_result$statistic, 2),
