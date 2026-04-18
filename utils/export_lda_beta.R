@@ -3,13 +3,15 @@
 # This script loads the fitted LDA models and exports their beta matrices to CSV
 # so that Python's gensim can calculate topic coherence scores.
 #
-# Usage: Rscript export_lda_beta.R
+# Usage: Rscript utils/export_lda_beta.R
+#   (or source from RStudio after running part2_poi_lda_yk.Rmd)
 
 library(topicmodels)
 
 # Paths
 data_dir <- "data"
-beta_dir <- file.path(data_dir, "lda_beta")
+poi_dir <- file.path(data_dir, "overture_pois")
+beta_dir <- file.path(poi_dir, "lda_beta")
 dir.create(beta_dir, showWarnings = FALSE, recursive = TRUE)
 
 # K values
@@ -20,8 +22,8 @@ cat("Exporting LDA beta matrices...\n")
 for (k in k_values) {
   cat(sprintf("  K=%d...", k))
 
-  # Load model
-  model_path <- file.path(data_dir, paste0("lda_model_k", k, ".rds"))
+  # Load model from overture_pois directory
+  model_path <- file.path(poi_dir, paste0("lda_model_k", k, ".rds"))
 
   if (!file.exists(model_path)) {
     cat(sprintf("  SKIP: Model not found: %s\n", model_path))
