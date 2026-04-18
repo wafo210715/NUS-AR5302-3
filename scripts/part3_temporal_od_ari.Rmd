@@ -1,0 +1,351 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r libraries}
+library(tidyverse)  
+library(lubridate)  
+library(patchwork)   
+library(scales)      
+```
+```{r file-paths}
+
+PATH_OD_ZIP  <- "C:/Users/yangy/OneDrive/25_26_sem2/UrbanAnalytics/GroupProject/od_subset-20260417T001632Z-3-001.zip"
+PATH_STATION <- "C:/Users/yangy/OneDrive/25_26_sem2/UrbanAnalytics/GroupProject/station_mapping.csv"
+PATH_LDA     <- "C:/Users/yangy/OneDrive/25_26_sem2/UrbanAnalytics/GroupProject/station_topic_classification_supplemented.csv"
+```
+
+```{r load-station-mapping}
+station_mapping <- read_csv(PATH_STATION, show_col_types = FALSE) |>
+
+  filter(in_od_data == TRUE)
+
+cat("Stations in OD data:", nrow(station_mapping), "\n")
+glimpse(station_mapping)
+```
+
+
+```{r load-od-data}
+zip_contents <- unzip(PATH_OD_ZIP, list = TRUE)
+od_files     <- zip_contents$Name[grepl("\\.csv$", zip_contents$Name, ignore.case = TRUE)]
+cat("CSV files in zip:", length(od_files), "\n")
+
+
+od_all <- map_dfr(od_files, function(f) {
+  read_csv(unz(PATH_OD_ZIP, f), show_col_types = FALSE)
+})
+
+od_all <- od_all |>
+  rename_with(tolower) |>
+
+  mutate(
+    year_month = ymd(paste0(year_month, "-01")),
+    ym_key     = format(year_month, "%Y-%m")
+  ) |>
+
+  filter(origin_pt_code %in% station_mapping$pt_code) |>
+
+  left_join(
+    station_mapping |> select(pt_code, university),
+    by = c("origin_pt_code" = "pt_code")
+  )
+
+cat("Total OD rows (filtered to campus origins):", nrow(od_all), "\n")
+cat("Months covered:", paste(sort(unique(od_all$ym_key)), collapse = ", "), "\n")
+glimpse(od_all)
+```
+
+```{r load-lda}
+station_lda <- read_csv(PATH_LDA, show_col_types = FALSE) |>
+  select(station_code, label)
+
+cat("Stations with LDA classification:", nrow(station_lda), "\n")
+cat("Urban function labels:\n")
+print(table(station_lda$label))
+```
+
+```{r academic-calendar}
+
+academic_calendar <- tibble(
+  ym_key = c(
+    "2024-08", "2024-09", "2024-10", "2024-11",
+    "2024-12",
+    "2025-01",
+    "2025-02", "2025-03", "2025-04",
+    "2025-05",
+    "2025-06", "2025-07", "2025-08"
+  ),
+  period = c(
+    "Semester 1", "Semester 1", "Semester 1", "Exam / Break",
+    "Vacation",
+    "Vacation",
+    "Semester 2", "Semester 2", "Semester 2",
+    "Exam / Break",
+    "Vacation", "Vacation", "Vacation"
+  )
+)
+period_colours <- c(
+  "Semester 1"   = "#4E79A7",
+  "Semester 2"   = "#59A14F",
+  "Exam / Break" = "#F28E2B",
+  "Vacation"     = "#E15759"
+)
+
+academic_calendar <- academic_calendar |>
+  mutate(period = factor(period, levels = names(period_colours)))
+
+academic_calendar
+```
+
+```{r monthly-volume-prep}
+monthly_trips <- od_all |>
+  group_by(ym_key, university) |>
+  summarise(total_trips = sum(total_trips), .groups = "drop") |>
+  left_join(academic_calendar, by = "ym_key") |>
+  mutate(
+    month_date = ymd(paste0(ym_key, "-01")),
+    university = factor(university, levels = c("NUS", "NTU", "SMU", "SUTD"))
+  )
+```
+
+```{r monthly-volume-plot, fig.height=5}
+period_blocks <- academic_calendar |>
+  mutate(month_date = ymd(paste0(ym_key, "-01"))) |>
+  group_by(period) |>
+  summarise(
+    xmin = min(month_date),
+    xmax = max(month_date) + days(31),
+    .groups = "drop"
+  )
+
+p_monthly <- ggplot(monthly_trips,
+                    aes(x = month_date, y = total_trips,
+                        colour = university, group = university)) +
+  geom_rect(
+    data = period_blocks,
+    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = period),
+    inherit.aes = FALSE,
+    alpha = 0.15
+  ) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 2.5) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b '%y") +
+  scale_y_continuous(labels = comma) +
+  scale_fill_manual(values = period_colours, name = "Academic Period") +
+  scale_colour_manual(
+    values = c(NUS = "#003D7C", NTU = "#EF3824", SMU = "#6B2D8B", SUTD = "#F5A623"),
+    name = "University"
+  ) +
+  labs(
+    title    = "Monthly Trip Volume by University (AY2024-25)",
+    subtitle = "Background shading indicates academic calendar period",
+    x = NULL, y = "Total Trips"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.minor   = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
+  )
+
+p_monthly
+```
+
+```{r heatmap-prep}
+heatmap_data <- monthly_trips |>
+  group_by(university) |>
+  mutate(trips_z = (total_trips - mean(total_trips)) / sd(total_trips)) |>
+  ungroup() |>
+  left_join(academic_calendar |> select(ym_key, period), by = "ym_key") |>
+  mutate(month_label = format(month_date, "%b\n'%y"))
+```
+
+```{r heatmap-plot, fig.height=3.5}
+p_heatmap <- ggplot(heatmap_data,
+                    aes(x = reorder(month_label, month_date),
+                        y = university,
+                        fill = trips_z)) +
+  geom_tile(colour = "white", linewidth = 0.5) +
+  scale_fill_gradient2(
+    low = "#4E79A7", mid = "white", high = "#E15759",
+    midpoint = 0, name = "Trips\n(z-score)"
+  ) +
+  labs(
+    title    = "University x Month Trip Intensity Heatmap",
+    subtitle = "Tile labels: S1/S2 = Semester, Ex = Exam/Break, Vac = Vacation",
+    x = NULL, y = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid = element_blank(), axis.text.x = element_text(size = 8))
+
+p_heatmap
+```
+
+```{r sem-vac-prep}
+period_comparison <- monthly_trips |>
+  group_by(university, period) |>
+  summarise(
+    mean_trips = mean(total_trips),
+    se_trips   = sd(total_trips) / sqrt(n()),  # SE for error bars
+    .groups = "drop"
+  )
+```
+
+```{r sem-vac-plot, fig.height=4.5}
+p_semvac <- ggplot(period_comparison,
+                   aes(x = period, y = mean_trips, fill = period)) +
+  geom_col(width = 0.6, alpha = 0.85) +
+  geom_errorbar(
+    aes(ymin = mean_trips - se_trips, ymax = mean_trips + se_trips),
+    width = 0.2, linewidth = 0.7
+  ) +
+  facet_wrap(~ university, nrow = 1, scales = "free_y") +
+  scale_fill_manual(values = period_colours, guide = "none") +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title    = "Mean Monthly Trips by Academic Period",
+    subtitle = "Error bars show +/-1 SE across months within each period",
+    x = NULL, y = "Mean Monthly Trips"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    strip.text  = element_text(face = "bold")
+  )
+
+p_semvac
+```
+
+```{r intraday-prep}
+intraday_trips <- od_all |>
+  filter(day_type == "WEEKDAY") |>
+  mutate(
+    time_band = case_when(
+      time_per_hour >= 6  & time_per_hour < 10 ~ "Morning (6-10)",
+      time_per_hour >= 10 & time_per_hour < 16 ~ "Afternoon (10-16)",
+      time_per_hour >= 16 & time_per_hour < 22 ~ "Evening (16-22)",
+      TRUE                                      ~ "Night (22-6)"
+    ),
+    time_band = factor(time_band, levels = c(
+      "Morning (6-10)", "Afternoon (10-16)", "Evening (16-22)", "Night (22-6)"
+    ))
+  ) |>
+  left_join(academic_calendar |> select(ym_key, period), by = "ym_key") |>
+  group_by(university, period, time_band) |>
+  summarise(total_trips = sum(total_trips), .groups = "drop") |>
+  # Convert to share within each university x period
+  group_by(university, period) |>
+  mutate(share = total_trips / sum(total_trips)) |>
+  ungroup()
+```
+
+```{r intraday-plot, fig.height=5.5}
+p_intraday <- ggplot(intraday_trips,
+                     aes(x = period, y = share, fill = time_band)) +
+  geom_col(width = 0.7) +
+  facet_wrap(~ university, nrow = 1) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  scale_fill_manual(
+    values = c(
+      "Morning (6-10)"    = "#4E79A7",
+      "Afternoon (10-16)" = "#F28E2B",
+      "Evening (16-22)"   = "#E15759",
+      "Night (22-6)"      = "#76B7B2"
+    ),
+    name = "Time Band"
+  ) +
+  labs(
+    title    = "Intra-day Trip Distribution by University and Academic Period",
+    subtitle = "Weekdays only; shares sum to 100% within each university x period",
+    x = NULL, y = "Share of Daily Trips"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    strip.text  = element_text(face = "bold")
+  )
+
+p_intraday
+```
+
+```{r dest-function-prep}
+
+dest_function <- od_all |>
+  left_join(station_lda, by = c("destination_pt_code" = "station_code")) |>
+  filter(!is.na(label)) |>   # drop destinations not in LDA classification
+  left_join(academic_calendar |> select(ym_key, period), by = "ym_key") |>
+  group_by(university, period, label) |>
+  summarise(total_trips = sum(total_trips), .groups = "drop") |>
+  group_by(university, period) |>
+  mutate(share = total_trips / sum(total_trips)) |>
+  ungroup()
+```
+
+```{r dest-function-plot, fig.height=5.5}
+p_dest <- ggplot(dest_function,
+                 aes(x = period, y = share, fill = label)) +
+  geom_col(width = 0.7) +
+  facet_wrap(~ university, nrow = 1) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  scale_fill_brewer(palette = "Set2", name = "Destination\nFunction") +
+  labs(
+    title = "Destination Urban Function by University and Academic Period",
+    x = NULL, y = "Share of Trips"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    strip.text  = element_text(face = "bold")
+  )
+
+p_dest
+```
+
+```{r dest-function-monthly, fig.height=5}
+# Monthly breakdown for one university — change focus_uni to switch
+focus_uni <- "NUS"
+
+dest_monthly <- od_all |>
+  filter(university == focus_uni) |>
+  left_join(station_lda, by = c("destination_pt_code" = "station_code")) |>
+  filter(!is.na(label)) |>
+  group_by(ym_key, label) |>
+  summarise(total_trips = sum(total_trips), .groups = "drop") |>
+  group_by(ym_key) |>
+  mutate(
+    share      = total_trips / sum(total_trips),
+    month_date = ymd(paste0(ym_key, "-01"))
+  ) |>
+  ungroup()
+
+p_dest_monthly <- ggplot(dest_monthly,
+                          aes(x = month_date, y = share, fill = label)) +
+  geom_area(alpha = 0.85) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b '%y") +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  scale_fill_brewer(palette = "Set2", name = "Destination\nFunction") +
+  labs(
+    title    = paste0(focus_uni, ": Destination Function Share Over Time"),
+    subtitle = "Stacked area; each band = share of monthly trips to that urban function",
+    x = NULL, y = "Share of Trips"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.minor   = element_blank(),
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+p_dest_monthly
+```
+
+```{r session-info, echo=FALSE}
+sessionInfo()
+```
