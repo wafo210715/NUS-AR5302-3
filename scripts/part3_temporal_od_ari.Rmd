@@ -250,10 +250,10 @@ p_intraday <- ggplot(intraday_trips,
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
   scale_fill_manual(
     values = c(
-      "Morning (6-10)"    = "#4E79A7",
-      "Afternoon (10-16)" = "#F28E2B",
-      "Evening (16-22)"   = "#E15759",
-      "Night (22-6)"      = "#76B7B2"
+      "Morning (6-10)"    = "#C8ECE5",
+      "Afternoon (10-16)" = "#4FA9c4",
+      "Evening (16-22)"   = "#F0C66B",
+      "Night (22-6)"      = "#F28C4C"
     ),
     name = "Time Band"
   ) +
@@ -277,13 +277,16 @@ p_intraday
 
 dest_function <- od_all |>
   left_join(station_lda, by = c("destination_pt_code" = "station_code")) |>
-  filter(!is.na(label)) |>   # drop destinations not in LDA classification
+  filter(!is.na(label)) |>  
   left_join(academic_calendar |> select(ym_key, period), by = "ym_key") |>
   group_by(university, period, label) |>
   summarise(total_trips = sum(total_trips), .groups = "drop") |>
   group_by(university, period) |>
   mutate(share = total_trips / sum(total_trips)) |>
   ungroup()
+```
+```{r}
+unique(dest_function$label)
 ```
 
 ```{r dest-function-plot, fig.height=5.5}
@@ -292,7 +295,14 @@ p_dest <- ggplot(dest_function,
   geom_col(width = 0.7) +
   facet_wrap(~ university, nrow = 1) +
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
-  scale_fill_brewer(palette = "Set2", name = "Destination\nFunction") +
+  scale_fill_manual(
+    values = c("Dining & Hospitality" = "#51999F",
+               "Education & Professional Services" = "#BFDFD2",
+               "Industrial & Automotive" = "#DBCB92",
+               "Mixed-Use & Community" = "#7BC0CD",
+               "Retail & Personal Care" = "#ED8D5A"),
+    name = "Destination\nFunction"
+  ) +
   labs(
     title = "Destination Urban Function by University and Academic Period",
     x = NULL, y = "Share of Trips"
