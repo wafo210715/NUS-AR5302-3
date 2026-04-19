@@ -31,10 +31,12 @@ project_colors <- c(
   buffer_yel  = "#FFBA08"
 )
 
-# Topic palette (for K=6, extend as needed)
+# Topic palette — aligned with Part 4 standard topic colours
+# Topic 1 = Education, Topic 2 = Dining, Topic 3 = Mixed-Use,
+# Topic 4 = Industrial, Topic 5 = Retail
 topic_palette <- c(
-  "#E63946", "#457B9D", "#2A9D8F", "#E9C46A",
-  "#F4A261", "#264653", "#6A0572", "#AB83A1"
+  "#BFDFD2", "#51999F", "#7BC0CD", "#DBCB92",
+  "#ED8D5A", "#264653", "#6A0572", "#AB83A1"
 )
 
 map_theme <- theme_minimal(base_size = 12) +
@@ -612,6 +614,36 @@ write.csv(station_class,
           file.path(poi_dir, "station_topic_classification.csv"),
           row.names = FALSE)
 message("\nSaved station_topic_classification.csv")
+```
+
+<!-- ===== TABLE: LDA TOPIC CLASSIFICATION ===== -->
+
+```{r part2-topic-table, message=FALSE}
+# Build a publication-ready topic classification table
+station_topic_summary <- station_class %>%
+  group_by(label) %>%
+  summarise(
+    stations = n(),
+    share = round(n() / nrow(station_class) * 100, 1),
+    mean_purity = round(mean(purity), 3),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(stations))
+
+topic_table <- topic_terms %>%
+  group_by(topic) %>%
+  slice_max(order_by = probability, n = 5) %>%
+  summarise(top_categories = paste(category, collapse = ", "), .groups = "drop") %>%
+  left_join(topic_labels, by = "topic") %>%
+  left_join(station_topic_summary, by = "label") %>%
+  select(label, top_categories, stations, share, mean_purity) %>%
+  arrange(desc(stations))
+
+kable(
+  topic_table,
+  col.names = c("Urban Function", "Top 5 Overture Categories", "Stations", "Share (%)", "Mean Purity"),
+  caption = "LDA topic classification (K = 5): urban function labels, top POI categories, and coverage."
+)
 ```
 
 <!-- ===== STEP 9: VISUALIZATION ===== -->

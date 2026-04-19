@@ -10,7 +10,7 @@ theme_set(
 
 univ_levels <- c("NUS", "NTU", "SMU", "SUTD")
 univ_colors <- c(
-  NUS  = "#8ECDB8",
+  NUS  = "#C8ECE5",
   NTU  = "#4FA9C4",
   SMU  = "#F0C66B",
   SUTD = "#F28C4C"

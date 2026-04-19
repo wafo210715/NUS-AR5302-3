@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Part 4: Comparative Destination Analysis"
 author: "yin"
 output: html_document
@@ -936,11 +936,7 @@ campus_label_xy <- campus_points_sf %>%
   ) %>%
   st_drop_geometry()
 
-density_map_colors <- c(
-  NUS  = "#8ECDB8",
-  NTU  = "#4FA9C4",
-  SMU  = "#F0C66B",
-  SUTD = "#F28C4C"
+density_map_colors <- univ_colors  # Standardised to Part 4 palette
 )
 
 p_density <- ggplot() +
@@ -1208,11 +1204,7 @@ sankey_data <- sankey_data %>%
 ```
 
 ```{r sankey-plot, fig.width=12, fig.height=9}
-sankey_colors <- c(
-  NUS = "#C8ECE5",
-  NTU = "#148CB1",
-  SMU = "#EBB33A",
-  SUTD = "#ED6510"
+sankey_colors <- univ_colors  # Standardised to Part 4 palette
 )
 
 p_sankey <- ggplot(
@@ -1410,6 +1402,160 @@ if (nrow(topic_preference_text) > 0) {
   )
 }
 cat("\n")
+```
+
+## Station-Level Topic Decomposition
+
+For the over-indexing university–topic pairs identified above, decompose
+*which specific destination stations* drive each association. This answers
+the interpretive questions needed for the paper's Results §3.5.
+
+```{r station-decomposition-helper}
+#' Compute station-level trip contribution table for a university–topic pair.
+#'
+#' @param uni   University name (character): "NUS", "NTU", "SMU", or "SUTD"
+#' @param topic Topic label (character): must match topic_levels
+#' @param top_n Number of top stations to return (default 15)
+#' @return tibble with station details, trip counts, and cumulative share
+decompose_topic_stations <- function(uni, topic, top_n = 15) {
+  od_enriched %>%
+    filter(
+      origin_university == uni,
+      topic_label == topic
+    ) %>%
+    group_by(
+      DESTINATION_PT_CODE,
+      destination_name,
+      destination_mode,
+      dest_lon,
+      dest_lat
+    ) %>%
+    summarise(trips = sum(TOTAL_TRIPS), .groups = "drop") %>%
+    arrange(desc(trips)) %>%
+    mutate(
+      rank    = row_number(),
+      pct     = trips / sum(trips) * 100,
+      cum_pct = cumsum(pct)
+    ) %>%
+    slice_head(n = top_n) %>%
+    select(
+      rank, DESTINATION_PT_CODE, destination_name, destination_mode,
+      trips, pct, cum_pct, dest_lon, dest_lat
+    )
+}
+```
+
+### SMU → Industrial & Automotive (z = 281.66)
+
+```{r smu-industrial-decomposition, message=FALSE}
+smu_industrial <- decompose_topic_stations("SMU", "Industrial & Automotive")
+
+kable(
+  smu_industrial %>%
+    select(-dest_lon, -dest_lat) %>%
+    mutate(
+      trips = comma(trips),
+      pct   = round(pct, 1),
+      cum_pct = round(cum_pct, 1)
+    ),
+  caption = paste0(
+    "Top destinations driving SMU's over-indexing on Industrial & Automotive. ",
+    "These ", nrow(smu_industrial), " stations account for ",
+    round(max(smu_industrial$cum_pct), 1),
+    "% of SMU→Industrial trips."
+  )
+)
+```
+
+### SMU → Education & Professional Services (z = 473.58)
+
+```{r smu-education-decomposition, message=FALSE}
+smu_education <- decompose_topic_stations("SMU", "Education & Professional Services")
+
+kable(
+  smu_education %>%
+    select(-dest_lon, -dest_lat) %>%
+    mutate(
+      trips = comma(trips),
+      pct   = round(pct, 1),
+      cum_pct = round(cum_pct, 1)
+    ),
+  caption = paste0(
+    "Top destinations driving SMU's over-indexing on Education & Professional Services. ",
+    "These ", nrow(smu_education), " stations account for ",
+    round(max(smu_education$cum_pct), 1),
+    "% of SMU→Education trips."
+  )
+)
+```
+
+### NUS → Dining & Hospitality (z = 328.73)
+
+```{r nus-dining-decomposition, message=FALSE}
+nus_dining <- decompose_topic_stations("NUS", "Dining & Hospitality")
+
+kable(
+  nus_dining %>%
+    select(-dest_lon, -dest_lat) %>%
+    mutate(
+      trips = comma(trips),
+      pct   = round(pct, 1),
+      cum_pct = round(cum_pct, 1)
+    ),
+  caption = paste0(
+    "Top destinations driving NUS's over-indexing on Dining & Hospitality. ",
+    "These ", nrow(nus_dining), " stations account for ",
+    round(max(nus_dining$cum_pct), 1),
+    "% of NUS→Dining trips."
+  )
+)
+```
+
+### Station-Level Topic Decomposition Map
+
+Map the top contributing stations for all three key associations on a
+single Singapore basemap to visualise their spatial distribution.
+
+```{r station-decomposition-map, message=FALSE, fig.width=10, fig.height=7}
+# Combine all three decompositions with labels
+topic_assoc_stations <- bind_rows(
+  smu_industrial %>% mutate(association = "SMU → Industrial"),
+  smu_education   %>% mutate(association = "SMU → Education"),
+  nus_dining      %>% mutate(association = "NUS → Dining")
+) %>%
+  filter(!is.na(dest_lon), !is.na(dest_lat))
+
+assoc_colors <- c(
+  "SMU → Industrial"  = "#E15759",
+  "SMU → Education"   = "#4E79A7",
+  "NUS → Dining"      = "#59A14F"
+)
+
+ggplot() +
+  geom_sf(data = sg_subzones_proj, fill = "grey92", colour = "white", linewidth = 0.2) +
+  geom_point(
+    data = topic_assoc_stations,
+    aes(x = dest_lon, y = dest_lat, colour = association, size = trips),
+    alpha = 0.7
+  ) +
+  ggrepel::geom_text_repel(
+    data = topic_assoc_stations %>%
+      group_by(association) %>%
+      slice_head(n = 5) %>%  # label top 5 per association
+      ungroup(),
+    aes(x = dest_lon, y = dest_lat, label = destination_name),
+    size = 2.5, max.overlaps = 20, segment.size = 0.3
+  ) +
+  scale_colour_manual(values = assoc_colors) +
+  scale_size_continuous(range = c(1.5, 8), labels = comma) +
+  coord_sf(crs = 3414) +
+  map_theme +
+  labs(
+    title = "Top Stations Driving University–Topic Associations",
+    subtitle = "Station size proportional to trip volume; labels show top 5 per association",
+    colour = "Association",
+    size = "Trips"
+  )
 ```
 
 ## Notes for Write-up

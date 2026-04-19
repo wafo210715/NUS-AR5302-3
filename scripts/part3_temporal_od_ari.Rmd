@@ -9,10 +9,12 @@ library(patchwork)
 library(scales)      
 ```
 ```{r file-paths}
+PROJ <- normalizePath("..")
+data_dir    <- file.path(PROJ, "data")
+od_dir      <- file.path(data_dir, "od_subset")
 
-PATH_OD_ZIP  <- "C:/Users/yangy/OneDrive/25_26_sem2/UrbanAnalytics/GroupProject/od_subset-20260417T001632Z-3-001.zip"
-PATH_STATION <- "C:/Users/yangy/OneDrive/25_26_sem2/UrbanAnalytics/GroupProject/station_mapping.csv"
-PATH_LDA     <- "C:/Users/yangy/OneDrive/25_26_sem2/UrbanAnalytics/GroupProject/station_topic_classification_supplemented.csv"
+PATH_STATION <- file.path(data_dir, "station_mapping.csv")
+PATH_LDA     <- file.path(data_dir, "station_topic_classification_supplemented.csv")
 ```
 
 ```{r load-station-mapping}
@@ -26,14 +28,10 @@ glimpse(station_mapping)
 
 
 ```{r load-od-data}
-zip_contents <- unzip(PATH_OD_ZIP, list = TRUE)
-od_files     <- zip_contents$Name[grepl("\\.csv$", zip_contents$Name, ignore.case = TRUE)]
-cat("CSV files in zip:", length(od_files), "\n")
+od_files <- list.files(od_dir, pattern = "\\.csv$", full.names = TRUE)
+cat("CSV files in OD directory:", length(od_files), "\n")
 
-
-od_all <- map_dfr(od_files, function(f) {
-  read_csv(unz(PATH_OD_ZIP, f), show_col_types = FALSE)
-})
+od_all <- map_dfr(od_files, ~ read_csv(.x, show_col_types = FALSE))
 
 od_all <- od_all |>
   rename_with(tolower) |>
@@ -133,7 +131,7 @@ p_monthly <- ggplot(monthly_trips,
   scale_y_continuous(labels = comma) +
   scale_fill_manual(values = period_colours, name = "Academic Period") +
   scale_colour_manual(
-    values = c(NUS = "#003D7C", NTU = "#EF3824", SMU = "#6B2D8B", SUTD = "#F5A623"),
+    values = c(NUS = "#C8ECE5", NTU = "#4FA9C4", SMU = "#F0C66B", SUTD = "#F28C4C"),
     name = "University"
   ) +
   labs(
@@ -292,7 +290,13 @@ p_dest <- ggplot(dest_function,
   geom_col(width = 0.7) +
   facet_wrap(~ university, nrow = 1) +
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
-  scale_fill_brewer(palette = "Set2", name = "Destination\nFunction") +
+  scale_fill_manual(values = c(
+    "Education & Professional Services" = "#BFDFD2",
+    "Dining & Hospitality"              = "#51999F",
+    "Mixed-Use & Community"             = "#7BC0CD",
+    "Industrial & Automotive"           = "#DBCB92",
+    "Retail & Personal Care"            = "#ED8D5A"
+  ), name = "Destination\nFunction") +
   labs(
     title = "Destination Urban Function by University and Academic Period",
     x = NULL, y = "Share of Trips"
@@ -330,7 +334,13 @@ p_dest_monthly <- ggplot(dest_monthly,
   geom_area(alpha = 0.85) +
   scale_x_date(date_breaks = "1 month", date_labels = "%b '%y") +
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
-  scale_fill_brewer(palette = "Set2", name = "Destination\nFunction") +
+  scale_fill_manual(values = c(
+    "Education & Professional Services" = "#BFDFD2",
+    "Dining & Hospitality"              = "#51999F",
+    "Mixed-Use & Community"             = "#7BC0CD",
+    "Industrial & Automotive"           = "#DBCB92",
+    "Retail & Personal Care"            = "#ED8D5A"
+  ), name = "Destination\nFunction") +
   labs(
     title    = paste0(focus_uni, ": Destination Function Share Over Time"),
     subtitle = "Stacked area; each band = share of monthly trips to that urban function",
