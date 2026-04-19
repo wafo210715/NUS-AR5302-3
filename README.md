@@ -43,7 +43,12 @@ NUS (Kent Ridge), NTU, SMU (Bras Basah), SUTD (Tampines)
 uv sync
 
 # R packages (in R console)
-install.packages(c("tidyverse", "lubridate", "patchwork", "scales", "ggalluvial"))
+install.packages(c(
+  "tidyverse", "lubridate", "patchwork", "scales",
+  "sf", "terra", "geosphere", "ggalluvial",
+  "topicmodels", "tm", "Matrix",
+  "fmsb", "viridis", "jsonlite", "knitr"
+))
 ```
 
 ## Data Sources
